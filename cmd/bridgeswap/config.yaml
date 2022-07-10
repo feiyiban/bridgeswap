@@ -1,0 +1,17 @@
+chains:
+  - name: 'eth'
+    type: 'ethereum'
+    id: '1'
+    endpoint: 'https://rinkeby.infura.io/v3/'
+    from: '0x39FDeD8CE4Aca2B674eF863d8C4E93bD15718101'
+    opts: 
+      bridge: '0x99155bCcF403D838F2F643F66450c616F7d2c2A3'
+      erc20: '0xA96039f8038899F023f73c55E81C57B8Ab06e7DB'
+  - name: 'trx'
+    type: 'tron'
+    id: '2'
+    endpoint: 'grpc.shasta.trongrid.io:50051'
+    from: 'TY6uRq9m3b22ttoJZkCYazwNvtRkXwC9T2'
+    opts: 
+      bridge: 'TT3jDmN4WAYV5brm5aDArFGrPd2j2gtqRV'
+      erc20: 'TR46tECYSr42UhMMeCKMFFfqiyEHcUn2ih'

@@ -4,7 +4,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 */
 package main
 
-import "bridge-swap/cmd/bridge-swap/sub"
+import "bridgeswap/cmd/bridgeswap/sub"
 
 func main() {
 	sub.Execute()
