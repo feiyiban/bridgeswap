@@ -1,13 +1,14 @@
 package sub
 
 import (
+	"bridgeswap/chains/ethereum"
 	"bridgeswap/logger"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
+	"strconv"
 
 	"github.com/spf13/cobra"
+
+	"bridgeswap/controller/core"
 )
 
 var (
@@ -23,23 +24,42 @@ var (
 )
 
 func runDaemon() error {
-	chains, err := parseDaemonConfig(cfgFile)
+	chainInfo, err := parseDaemonConfig(cfgFile)
 	if err != nil {
 		return err
 	}
+	logger.Debug(fmt.Sprintf("%v", chainInfo))
 
-	logger.Info(fmt.Sprintf("%v", chains))
-
-	chanSig := make(chan os.Signal)
-	signal.Notify(chanSig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-exit:
-	select {
-	case sig := <-chanSig:
-		switch sig {
-		case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
-			break exit
+	sysErr := make(chan error)
+	objCore := core.NewCore(sysErr)
+	for _, chain := range chainInfo.Chains {
+		chainId, errr := strconv.Atoi(chain.ID)
+		if errr != nil {
+			return errr
 		}
+		chainConfig := &core.ChainConfig{
+			Name:     chain.Name,
+			ID:       uint8(chainId),
+			Endpoint: chain.Endpoint,
+			From:     chain.From,
+		}
+
+		var newChain core.Chain
+		log := logger.Root().New("chain", chainConfig.Name)
+
+		if chain.Type == "ethereum" {
+			newChain, err = ethereum.InitializeChain(chainConfig, log, sysErr)
+		}
+
+		if err != nil {
+			logger.Info(err.Error())
+			return err
+		}
+
+		objCore.AddChain(newChain)
 	}
+
+	objCore.Start()
 
 	return nil
 }
