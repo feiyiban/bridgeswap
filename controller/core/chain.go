@@ -9,8 +9,9 @@ type Chain interface {
 }
 
 type ChainConfig struct {
-	Name           string            // Human-readable chain name
-	ID             uint8             // ChainID
+	Name           string // Human-readable chain name
+	ID             uint8  // ChainID
+	Http           bool
 	Endpoint       string            // url for rpc endpoint
 	From           string            // address of key to use
 	KeystorePath   string            // Location of key files

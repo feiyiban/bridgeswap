@@ -2,6 +2,7 @@ package sub
 
 import (
 	"bridgeswap/chains/ethereum"
+	"bridgeswap/chains/tron"
 	"bridgeswap/logger"
 	"fmt"
 	"strconv"
@@ -40,8 +41,10 @@ func runDaemon() error {
 		chainConfig := &core.ChainConfig{
 			Name:     chain.Name,
 			ID:       uint8(chainId),
+			Http:     chain.Http,
 			Endpoint: chain.Endpoint,
 			From:     chain.From,
+			Opts:     chain.Opts,
 		}
 
 		var newChain core.Chain
@@ -49,6 +52,8 @@ func runDaemon() error {
 
 		if chain.Type == "ethereum" {
 			newChain, err = ethereum.InitializeChain(chainConfig, log, sysErr)
+		} else if chain.Type == "tron" {
+			newChain, err = tron.InitializeChain(chainConfig, log, sysErr)
 		}
 
 		if err != nil {
