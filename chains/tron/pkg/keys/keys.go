@@ -16,7 +16,7 @@ import (
 
 func checkAndMakeKeyDirIfNeeded() string {
 	userDir, _ := homedir.Dir()
-	tronCTLDir := path.Join(userDir, ".tronctl", "keystore")
+	tronCTLDir := path.Join(userDir, ".tronbridge", "keystore")
 	if _, err := os.Stat(tronCTLDir); os.IsNotExist(err) {
 		// Double check with Leo what is right file persmission
 		os.Mkdir(tronCTLDir, 0700)

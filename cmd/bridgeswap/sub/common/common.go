@@ -7,5 +7,5 @@ const (
 )
 
 var (
-	DefaultConfigDirName = ".bridge"
+	DefaultConfigDirName = ".ethbridge"
 )

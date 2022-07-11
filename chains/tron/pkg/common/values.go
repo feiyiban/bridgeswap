@@ -18,7 +18,7 @@ const (
 
 var (
 	// DefaultConfigDirName for wallets
-	DefaultConfigDirName = ".tronctl"
+	DefaultConfigDirName = ".tronbridge"
 	DebugGRPC            = false
 	DebugTransaction     = false
 	ErrNotAbsPath        = errors.New("keypath is not absolute path")
