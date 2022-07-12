@@ -27,6 +27,7 @@ import (
 	"os"
 
 	"bridgeswap/chains/ethereum/crypto"
+	"bridgeswap/config"
 )
 
 const EnvPassword = "KEYSTORE_PASSWORD"
@@ -40,6 +41,9 @@ var keyMapping = map[string]string{
 func KeypairFromAddress(addr, chainType, path string, insecure bool) (crypto.Keypair, error) {
 	if insecure {
 		return insecureKeypairFromAddress(path, chainType)
+	}
+	if path == "" {
+		path = config.DefaultEthKeystorePath
 	}
 	path = fmt.Sprintf("%s/%s.key", path, addr)
 	// Make sure key exists before prompting password

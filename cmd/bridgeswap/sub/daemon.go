@@ -3,6 +3,7 @@ package sub
 import (
 	"bridgeswap/chains/ethereum"
 	"bridgeswap/chains/tron"
+	"bridgeswap/config"
 	"bridgeswap/logger"
 	"fmt"
 	"strconv"
@@ -25,7 +26,7 @@ var (
 )
 
 func runDaemon() error {
-	chainInfo, err := parseDaemonConfig(cfgFile)
+	chainInfo, err := config.ParseDaemonConfig(cfgFile)
 	if err != nil {
 		return err
 	}

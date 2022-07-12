@@ -4,26 +4,25 @@ import (
 	// metrics "crosschainbridge/controller/metrics/types"
 	"fmt"
 	"math/big"
+	"os"
 
-	"bridgeswap/controller/core"
-	// "bridgeswap/controller/crypto/secp256k1"
-
-	// metrics "crosschainbridge/controller/metrics/types"
-
-	// "crosschainbridge/chains/tron/addressexchange"
+	"bridgeswap/blockstore"
 	"bridgeswap/chains/tron/connection"
+	"bridgeswap/controller/core"
 
 	"bridgeswap/logger"
 
 	tronGrpc "bridgeswap/chains/tron/pkg/client"
-	tronapi "bridgeswap/chains/tron/pkg/proto/api"
+	tronstore "bridgeswap/chains/tron/pkg/store"
+
+	terminal "golang.org/x/term"
 )
 
 type Connection interface {
 	Connect() error
 	Client() *tronGrpc.GrpcClient
 	LatestBlock() (*big.Int, error)
-	DepositOut(from, contractAddress, param string, feeLimit int64, tAmount float64, tTokenID string, tTokenAmount int64) (*tronapi.TransactionExtention, error)
+	TransferIn(token, contractAddress, param string, feeLimit int64, tAmount float64, tTokenID string, tTokenAmount int64) error
 	Close()
 }
 
@@ -37,40 +36,61 @@ type Chain struct {
 
 // checkBlockstore queries the blockstore for the latest known block. If the latest block is
 // greater than cfg.startBlock, then cfg.startBlock is replaced with the latest known block.
-// func setupBlockstore(cfg *Config, kp *secp256k1.Keypair) (*blockstore.Blockstore, error) {
-// 	bs, err := blockstore.NewBlockstore(cfg.blockstorePath, cfg.id, kp.Address())
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func setupBlockstore(cfg *Config, addr string) (*blockstore.Blockstore, error) {
+	bs, err := blockstore.NewBlockstore(cfg.blockstorePath, cfg.id, addr)
+	if err != nil {
+		return nil, err
+	}
 
-// 	if !cfg.freshStart {
-// 		latestBlock, err := bs.TryLoadLatestBlock()
-// 		if err != nil {
-// 			return nil, err
-// 		}
+	if !cfg.freshStart {
+		latestBlock, err := bs.TryLoadLatestBlock()
+		if err != nil {
+			return nil, err
+		}
 
-// 		if latestBlock.Cmp(cfg.startBlock) == 1 {
-// 			cfg.startBlock = latestBlock
-// 		}
-// 	}
+		if latestBlock.Cmp(cfg.startBlock) == 1 {
+			cfg.startBlock = latestBlock
+		}
+	}
 
-// 	return bs, nil
-// }
+	return bs, nil
+}
+
+// getPassphrase fetches the correct passphrase depending on if a file is available to
+// read from or if the user wants to enter in their own passphrase. Otherwise, just use
+// the default passphrase. No confirmation of passphrase
+func getPassphrase() (string, error) {
+	fmt.Println("Enter password for tron key:")
+	pass, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return "", err
+	}
+	return string(pass), nil
+}
 
 func InitializeChain(chainCfg *core.ChainConfig, log logger.Logger, sysErr chan<- error) (*Chain, error) {
 	cfg, err := parseChainConfig(chainCfg)
 	if err != nil {
 		return nil, err
 	}
+	passphrase, err := getPassphrase()
+	if err != nil {
+		return nil, err
+	}
+	ks, acct, err := tronstore.UnlockedKeystore(cfg.from, passphrase)
+	if err != nil {
+		return nil, err
+	}
 
-	// bs, err := setupBlockstore(cfg, kp)
-	// if err != nil {
-	// 	log.Debug("setupBlockstore:", err.Error())
-	// 	return nil, err
-	// }
+	log.Info("InitializeChain", "InitializeChain", acct.Address.String())
+	bs, err := setupBlockstore(cfg, acct.Address.Hex())
+	if err != nil {
+		log.Debug("setupBlockstore:", err.Error())
+		return nil, err
+	}
 
 	stop := make(chan int)
-	conn := connection.NewConnection(cfg.endpoint, cfg.http, log, cfg.gasLimit, cfg.maxGasPrice, cfg.minGasPrice, cfg.gasMultiplier, cfg.egsApiKey, cfg.egsSpeed)
+	conn := connection.NewConnection(cfg.endpoint, cfg.http, log, ks, acct, cfg.gasLimit, cfg.maxGasPrice, cfg.minGasPrice, cfg.gasMultiplier, cfg.egsApiKey, cfg.egsSpeed)
 	err = conn.Connect()
 	if err != nil {
 		log.Debug("Connect:", err.Error())
@@ -95,7 +115,7 @@ func InitializeChain(chainCfg *core.ChainConfig, log logger.Logger, sysErr chan<
 		cfg.startBlock = curr
 	}
 
-	listener := NewListener(conn, cfg, log, stop, sysErr)
+	listener := NewListener(conn, cfg, log, bs, stop, sysErr)
 	// listener.setContracts(bridgeContract)
 
 	writer := NewWriter(conn, cfg, log, stop, sysErr)

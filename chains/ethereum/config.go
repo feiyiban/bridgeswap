@@ -15,11 +15,14 @@ const (
 	DefaultGasLimit           = 6721975
 	DefaultGasPrice           = 20000000000
 	DefaultMinGasPrice        = 0
-	DefaultBlockConfirmations = 1
+	DefaultBlockConfirmations = 3
 	DefaultGasMultiplier      = 1
 )
 
 // Chain specific options
+
+const DefaultKeystorePath = "./keys"
+
 var (
 	BridgeOpt             = "bridge"
 	ERC20Opt              = "erc20"
@@ -28,7 +31,7 @@ var (
 	GasLimitOpt           = "gasLimit"
 	GasMultiplier         = "gasMultiplier"
 	HttpOpt               = "http"
-	StartBlockOpt         = "startBlock"
+	StartBlockOpt         = "startblock"
 	BlockConfirmationsOpt = "blockConfirmations"
 )
 
@@ -42,6 +45,7 @@ type Config struct {
 	blockstorePath     string
 	freshStart         bool // Disables loading from blockstore at start
 	bridgeContract     common.Address
+	erc20Contract      common.Address
 	gasLimit           *big.Int
 	maxGasPrice        *big.Int
 	minGasPrice        *big.Int
@@ -65,6 +69,7 @@ func parseChainConfig(chainCfg *core.ChainConfig) (*Config, error) {
 		blockstorePath:     chainCfg.BlockstorePath,
 		freshStart:         chainCfg.FreshStart,
 		bridgeContract:     common.Address{},
+		erc20Contract:      common.Address{},
 		gasLimit:           big.NewInt(DefaultGasLimit),
 		maxGasPrice:        big.NewInt(DefaultGasPrice),
 		minGasPrice:        big.NewInt(DefaultMinGasPrice),

@@ -13,9 +13,7 @@ func (es EventSig) GetTopic() common.Hash {
 }
 
 const (
-	MapTransferOut EventSig = "MAPTransferOut(Address,Address,string,uint,uint)"
-	ProposalEvent  EventSig = "ProposalEvent(uint8,uint64,uint8,bytes32,bytes32)"
-	ProposalVote   EventSig = "ProposalVote(uint8,uint64,uint8,bytes32)"
+	MapTransferOut EventSig = "MAPTransferOut(uint,uint,string,uint)"
 )
 
 type ProposalStatus int

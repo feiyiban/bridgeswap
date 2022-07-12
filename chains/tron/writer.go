@@ -10,8 +10,6 @@ import (
 	"bridgeswap/logger"
 
 	tronabi "bridgeswap/chains/tron/pkg/abi"
-	trontransaction "bridgeswap/chains/tron/pkg/client/transaction"
-	tronstore "bridgeswap/chains/tron/pkg/store"
 )
 
 var _ core.Writer = &writer{}
@@ -27,7 +25,6 @@ type writer struct {
 	log            logger.Logger
 	stop           <-chan int
 	sysErr         chan<- error // Reports fatal error to core
-	// metrics        *metrics.ChainMetrics
 }
 
 // NewWriter creates and returns writer
@@ -38,7 +35,6 @@ func NewWriter(conn Connection, cfg *Config, log logger.Logger, stop <-chan int,
 		log:    log,
 		stop:   stop,
 		sysErr: sysErr,
-		// metrics: m,
 	}
 }
 
@@ -87,9 +83,10 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 
 	param := []tronabi.Param{
 		{"address": tokenAddr},
-		{"address": fromAddr},
 		{"address": destAddr},
 		{"uint256": big.NewInt(0).SetBytes(byteValue.Bytes()).String()},
+		{"uint256": big.NewInt(int64(m.Source)).String()},
+		{"uint256": big.NewInt(int64(m.Destination)).String()},
 	}
 
 	w.log.Info("hex.EncodeToString", "value", big.NewInt(0).SetBytes(byteValue.Bytes()).String())
@@ -97,40 +94,11 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 	if err != nil {
 		return false
 	}
-	tx, err := w.conn.DepositOut(w.cfg.from, w.bridgeContract, string(dataBuf), int64(400000000), 0, "", 0)
-
+	err = w.conn.TransferIn(w.cfg.from, w.bridgeContract, string(dataBuf), int64(4000000000), 0, "", 0)
 	if err != nil {
-		w.log.Error("tron--->bridgeContract--->DepositOut", "tx", err)
-		return false
-	}
-
-	w.log.Info("tron--->bridgeContract--->DepositOut", "tx", tx)
-	// ethAddr, _ := addressexchange.TronAddress2EthAddress(w.cfg.from)
-	// account := ethkeystore.a
-	// singeraddr, _ := tronaddr.Base58ToAddress(w.cfg.from)
-	// account := tronkeystore.Account{Address: singeraddr}
-	// keystore := ethkeystore.NewPlaintextKeyStore(w.cfg.keystorePath)
-	// keystore.DecodeKeypair()
-	// if err != nil {
-	// 	w.log.Error("UnlockedKeystore", "keysotre", err)
-	// 	return false
-	// }
-	var ctrlr *trontransaction.Controller
-
-	ks, acct, err := tronstore.UnlockedKeystore(w.cfg.from, "")
-	if err != nil {
-		return false
-	}
-	ctrlr = trontransaction.NewController(w.conn.Client(), ks, acct, tx.Transaction, opts)
-	if err = ctrlr.ExecuteTransaction(); err != nil {
-		w.log.Error("ExecuteTransaction", err)
 		return false
 	}
 
 	w.log.Info("Tron Bridge", "ExecuteTransaction", "successfully")
 	return true
-}
-
-func opts(ctlr *trontransaction.Controller) {
-
 }

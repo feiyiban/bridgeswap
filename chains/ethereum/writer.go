@@ -4,6 +4,8 @@ import (
 	"bridgeswap/bindings/eth/bridgev1"
 	"bridgeswap/controller/msg"
 	"bridgeswap/logger"
+	"bytes"
+	"math/big"
 )
 
 var (
@@ -53,4 +55,26 @@ func (w *writer) ResolveMessage(m msg.Message) bool {
 		w.log.Error("Unknown message type received", "type", m.Type)
 		return false
 	}
+}
+
+func (w *writer) ResolveErc20(m msg.Message) bool {
+
+	w.log.Info("ResolveErc20", "m.Payload", m.Payload)
+
+	if len(m.Payload) <= 0 {
+		return false
+	}
+	byteValue := new(bytes.Buffer)
+	byteValue.Write(m.Payload[32:64])
+	toAddr := new(bytes.Buffer)
+	toAddr.Write(m.Payload[96:130])
+	w.log.Info("Creating erc20", "src", m.Source, "byteValue", byteValue.Bytes(), "toaddr", toAddr.Bytes())
+	addr := toAddr.Bytes()
+
+	tokenAddr := w.cfg.erc20Contract.String()
+	fromAddr := w.cfg.from
+	destAddr := string(addr)
+	w.log.Info("Depositout Tron", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", destAddr, "value", big.NewInt(0).SetBytes(byteValue.Bytes()))
+
+	return true
 }

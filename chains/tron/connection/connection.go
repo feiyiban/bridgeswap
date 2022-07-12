@@ -15,17 +15,19 @@ import (
 
 	trongrpc "bridgeswap/chains/tron/pkg/client"
 	troncommon "bridgeswap/chains/tron/pkg/common"
-	tronapi "bridgeswap/chains/tron/pkg/proto/api"
+	"bridgeswap/chains/tron/pkg/keystore"
+
+	trontransaction "bridgeswap/chains/tron/pkg/client/transaction"
 )
 
 var BlockRetryInterval = time.Second * 5
 
 type Connection struct {
-	withTLS  bool
-	endpoint string
-	conn     *trongrpc.GrpcClient
-
-	// kp            *secp256k1.Keypair
+	withTLS       bool
+	endpoint      string
+	conn          *trongrpc.GrpcClient
+	key           *keystore.KeyStore
+	senderAcct    *keystore.Account
 	gasLimit      *big.Int
 	maxGasPrice   *big.Int
 	minGasPrice   *big.Int
@@ -39,19 +41,21 @@ type Connection struct {
 }
 
 // NewConnection returns an uninitialized connection, must call Connection.Connect() before using.
-func NewConnection(endpoint string, withTLS bool, log logger.Logger, gasLimit, maxGasPrice, minGasPrice *big.Int, gasMultiplier *big.Float, gsnApiKey, gsnSpeed string) *Connection {
+func NewConnection(endpoint string, withTLS bool, log logger.Logger, key *keystore.KeyStore, senderAcct *keystore.Account, gasLimit, maxGasPrice, minGasPrice *big.Int, gasMultiplier *big.Float, gsnApiKey, gsnSpeed string) *Connection {
 	return &Connection{
-		endpoint: endpoint,
-		withTLS:  withTLS,
-
+		endpoint:      endpoint,
+		withTLS:       withTLS,
+		log:           log,
+		key:           key,
+		senderAcct:    senderAcct,
 		gasLimit:      gasLimit,
 		maxGasPrice:   maxGasPrice,
 		minGasPrice:   minGasPrice,
 		gasMultiplier: gasMultiplier,
 		egsApiKey:     gsnApiKey,
 		egsSpeed:      gsnSpeed,
-		log:           log,
-		stop:          make(chan int),
+
+		stop: make(chan int),
 	}
 }
 
@@ -88,13 +92,16 @@ func (c *Connection) SelfChainId(contractAddress string) (*big.Int, error) {
 
 	data := troncommon.BytesToHexString(result.GetConstantResult()[0])
 
-	c.log.Info("jsonData", data)
+	c.log.Info("tron", "chainid", data)
 
 	return c.Client().ParseTRC20NumericProperty(data)
 
 }
 
-func (c *Connection) DepositOut(from, contractAddress, param string, feeLimit int64, tAmount float64, tTokenID string, tTokenAmount int64) (*tronapi.TransactionExtention, error) {
+func opts(ctlr *trontransaction.Controller) {
+}
+
+func (c *Connection) TransferIn(from, contractAddress, param string, feeLimit int64, tAmount float64, tTokenID string, tTokenAmount int64) error {
 	valueInt := int64(0)
 	if tAmount > 0 {
 		valueInt = int64(tAmount * math.Pow10(6))
@@ -105,12 +112,12 @@ func (c *Connection) DepositOut(from, contractAddress, param string, feeLimit in
 		// get token info
 		info, err := c.Client().GetAssetIssueByID(tTokenID)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		tokenInt = int64(tAmount * math.Pow10(int(info.Precision)))
 	}
 
-	tx, err := c.Client().TriggerContract(from, contractAddress, "depositOut(address,address,address,uint256)",
+	tx, err := c.Client().TriggerContract(from, contractAddress, "transferIn(address,address,uint256,uint256,uint256)",
 		param,
 		feeLimit,
 		valueInt,
@@ -118,11 +125,19 @@ func (c *Connection) DepositOut(from, contractAddress, param string, feeLimit in
 		tokenInt,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return tx, nil
+	c.log.Info("tron--->bridgeContract--->TransferIn", "tx", tx)
+	var ctrlr *trontransaction.Controller
 
+	ctrlr = trontransaction.NewController(c.Client(), c.key, c.senderAcct, tx.Transaction, opts)
+	if err = ctrlr.ExecuteTransaction(); err != nil {
+		c.log.Error("ExecuteTransaction", err)
+		return err
+	}
+
+	return nil
 }
 
 // LatestBlock returns the latest block from the current chain
@@ -140,63 +155,6 @@ func (c *Connection) LatestBlock() (*big.Int, error) {
 
 	return big.NewInt(height), nil
 }
-
-// LatestBlock returns the latest block from the current chain
-// func (c *Connection) LatestBlock() (*big.Int, error) {
-// 	header, err := c.Client().HeaderByNumber(context.Background(), nil)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return header.Number, nil
-// }
-
-// func (c *Connection) PendingNonceAt(ctx context.Context, account common.Address) (*big.Int, error) {
-// 	return c.conn.PendingBalanceAt(ctx, account)
-// }
-
-// // newTransactOpts builds the TransactOpts for the connection's keypair.
-// func (c *Connection) newTransactOpts(value, gasLimit, gasPrice *big.Int) (*bind.TransactOpts, error) {
-// 	privateKey := c.kp.PrivateKey()
-// 	address := ethcrypto.PubkeyToAddress(privateKey.PublicKey)
-
-// 	c.log.Info("newTransactopts", "address", address.Hex())
-// 	// nonce, err := c.conn.PendingNonceAt(context.Background(), address)
-// 	// if err != nil {
-// 	// 	return nil, err
-// 	// }
-
-// 	id, err := c.conn.ChainID(context.Background())
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, id)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// auth.Nonce = big.NewInt(int64(nonce))
-// 	auth.Value = value
-// 	auth.GasLimit = uint64(gasLimit.Int64())
-// 	auth.GasPrice = gasPrice
-// 	auth.Context = context.Background()
-
-// 	return auth, nil
-// }
-
-// // EnsureHasBytecode asserts if contract code exists at the specified address
-// func (c *Connection) EnsureHasBytecode(addr common.Address) error {
-// 	code, err := c.conn.CodeAt(context.Background(), addr, nil)
-// 	if err != nil {
-// 		return err
-
-// 	}
-
-// 	if len(code) == 0 {
-// 		return fmt.Errorf("no bytecode found at %s", addr.Hex())
-// 	}
-// 	return nil
-// }
 
 func multiplyGasPrice(gasEstimate *big.Int, gasMultiplier *big.Float) *big.Int {
 

@@ -10,17 +10,19 @@ import (
 	"bridgeswap/logger"
 	"fmt"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type Connection interface {
 	Connect() error
-
+	Client() *ethclient.Client
 	LatestBlock() (*big.Int, error)
 	// Opts() *bind.TransactOpts
 	// CallOpts() *bind.CallOpts
 	// LockAndUpdateOpts() error
 	// UnlockOpts()
-	// Client() *ethclient.Client
+
 	// EnsureHasBytecode(address common.Address) error
 	// LatestBlock() (*big.Int, error)
 	// WaitForBlock(block *big.Int, delay *big.Int) error

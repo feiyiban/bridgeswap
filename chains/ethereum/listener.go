@@ -3,12 +3,18 @@ package ethereum
 import (
 	"bridgeswap/blockstore"
 	"bridgeswap/logger"
+	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
 	"bridgeswap/bindings/eth/bridgev1"
 	"bridgeswap/chains"
+	"bridgeswap/controller/msg"
+
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
@@ -94,10 +100,6 @@ func (listen *listener) pollBlocks() error {
 				continue
 			}
 
-			// if listen.metrics != nil {
-			// 	listen.metrics.LatestKnownBlock.Set(float64(latestBlock.Int64()))
-			// }
-
 			// Sleep if the difference is less than BlockDelay; (latest - current) < BlockDelay
 			if big.NewInt(0).Sub(latestBlock, currentBlock).Cmp(listen.blockConfirmations) == -1 {
 				listen.log.Debug("Block not ready, will retry", "target", currentBlock, "latest", latestBlock)
@@ -119,14 +121,6 @@ func (listen *listener) pollBlocks() error {
 				listen.log.Error("Failed to write latest block to blockstore", "block", currentBlock, "err", err)
 			}
 
-			// if listen.metrics != nil {
-			// 	listen.metrics.BlocksProcessed.Inc()
-			// 	listen.metrics.LatestProcessedBlock.Set(float64(latestBlock.Int64()))
-			// }
-
-			// listen.latestBlock.Height = big.NewInt(0).Set(latestBlock)
-			// listen.latestBlock.LastUpdated = time.Now()
-
 			// Goto next block and reset retry counter
 			currentBlock.Add(currentBlock, big.NewInt(1))
 			retry = BlockRetryLimit
@@ -134,9 +128,64 @@ func (listen *listener) pollBlocks() error {
 	}
 }
 
+// buildQuery constructs a query for the bridgeContract by hashing sig to get the event topic
+func buildQuery(contract common.Address, sig EventSig, startBlock *big.Int, endBlock *big.Int) ethereum.FilterQuery {
+	query := ethereum.FilterQuery{
+		FromBlock: startBlock,
+		ToBlock:   endBlock,
+		Addresses: []common.Address{contract},
+		// Topics: [][]ethcommon.Hash{
+		// 	{sig.GetTopic()},
+		// },
+	}
+	return query
+}
+
 // getDepositEventsForBlock looks for the deposit event in the latest block
-func (l *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
-	l.log.Debug("Querying block for deposit events", "block", latestBlock)
+func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
+	listen.log.Debug("Querying block for deposit events", "block", latestBlock)
+
+	query := buildQuery(listen.cfg.bridgeContract, MapTransferOut, latestBlock, latestBlock)
+
+	// querying for logs
+	logs, err := listen.conn.Client().FilterLogs(context.Background(), query)
+	if err != nil {
+		return fmt.Errorf("unable to Filter Logs: %w", err)
+	}
+
+	// read through the log events and handle their deposit event if handler is recognized
+	for _, log := range logs {
+		text := fmt.Sprintf("log out:%v", log)
+		listen.log.Debug("Log for event ------>", "log", text)
+		// l.log.Debug("Log for event ------>", "data", log.Data)
+
+		if len(log.Topics) != 3 {
+			return nil
+		}
+		selfChainID := uint8(log.Topics[1].Big().Uint64())
+		destChainID := uint8(log.Topics[2].Big().Uint64())
+
+		listen.log.Debug("Log for event ------>", "selfChainID", selfChainID, "destChainID", destChainID)
+
+		m := msg.Message{
+			Source:      selfChainID,
+			Destination: destChainID,
+			Type:        msg.TokenTransfer,
+		}
+
+		m.Payload = append(m.Payload, log.Data...)
+
+		listen.log.Debug("Log for event ------>", "Payload", m.Payload)
+
+		if err != nil {
+			return err
+		}
+
+		err = listen.router.Send(m)
+		if err != nil {
+			listen.log.Error("subscription error: failed to route message", "err", err)
+		}
+	}
 
 	return nil
 }

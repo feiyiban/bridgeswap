@@ -9,7 +9,6 @@ import (
 
 	tronaddr "bridgeswap/chains/tron/pkg/address"
 	"bridgeswap/chains/tron/utils"
-	// "crosschainbridge/chains/tron/utils"
 )
 
 const DefaultGasLimit = 6721975
@@ -21,15 +20,13 @@ const DefaultGasMultiplier = 1
 // Chain specific options
 var (
 	BridgeOpt             = "bridge"
-	Erc20HandlerOpt       = "erc20Handler"
-	Erc721HandlerOpt      = "erc721Handler"
-	GenericHandlerOpt     = "genericHandler"
+	Erc20HandlerOpt       = "erc20"
 	MaxGasPriceOpt        = "maxGasPrice"
 	MinGasPriceOpt        = "minGasPrice"
 	GasLimitOpt           = "gasLimit"
 	GasMultiplier         = "gasMultiplier"
 	HttpOpt               = "http"
-	StartBlockOpt         = "startBlock"
+	StartBlockOpt         = "startblock"
 	BlockConfirmationsOpt = "blockConfirmations"
 	EGSApiKey             = "egsApiKey"
 	EGSSpeed              = "egsSpeed"
