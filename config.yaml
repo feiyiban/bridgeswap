@@ -1,14 +1,14 @@
 chains:
-  # - name: 'eth'
-  #   type: 'ethereum'
-  #   id: '1'
-  #   endpoint: 'https://rinkeby.infura.io/v3/a64cc9552107441e8a9c6de95692045f'
-  #   from: '0x39FDeD8CE4Aca2B674eF863d8C4E93bD15718101'
-  #   opts: 
-  #     bridge: '0x99155bCcF403D838F2F643F66450c616F7d2c2A3'
-  #     erc20: '0xA96039f8038899F023f73c55E81C57B8Ab06e7DB'
-  #     http: true
-  #     startblock: "11010412"
+  - name: 'eth'
+    type: 'ethereum'
+    id: '1'
+    endpoint: 'https://rinkeby.infura.io/v3/a64cc9552107441e8a9c6de95692045f'
+    from: '0x39FDeD8CE4Aca2B674eF863d8C4E93bD15718101'
+    opts: 
+      bridge: '0x99155bCcF403D838F2F643F66450c616F7d2c2A3'
+      erc20: '0xA96039f8038899F023f73c55E81C57B8Ab06e7DB'
+      http: true
+      startblock: "11010412"
   - name: 'trx'
     type: 'tron'
     id: '2'
@@ -17,4 +17,5 @@ chains:
     opts: 
       bridge: 'TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR'
       erc20: 'TMw3vT2zwWa5vomcqXgcQb3XCfac5kemKe'
-      startblock: "28005552"
+      startblock: "28026160"
+      erc20event: '"https://nile.trongrid.io/v1/contracts/TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR/events"'

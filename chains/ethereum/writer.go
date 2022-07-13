@@ -4,8 +4,14 @@ import (
 	"bridgeswap/bindings/eth/bridgev1"
 	"bridgeswap/controller/msg"
 	"bridgeswap/logger"
-	"bytes"
+	"context"
+	"fmt"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 var (
@@ -49,8 +55,7 @@ func (w *writer) ResolveMessage(m msg.Message) bool {
 
 	switch m.Type {
 	case msg.TokenTransfer:
-		// return w.createGenericDepositProposal(m)
-		return true
+		return w.ResolveErc20(m)
 	default:
 		w.log.Error("Unknown message type received", "type", m.Type)
 		return false
@@ -64,17 +69,47 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 	if len(m.Payload) <= 0 {
 		return false
 	}
-	byteValue := new(bytes.Buffer)
-	byteValue.Write(m.Payload[32:64])
-	toAddr := new(bytes.Buffer)
-	toAddr.Write(m.Payload[96:130])
-	w.log.Info("Creating erc20", "src", m.Source, "byteValue", byteValue.Bytes(), "toaddr", toAddr.Bytes())
-	addr := toAddr.Bytes()
+
+	toAddr := m.Payload[0].([]byte)
+	value := m.Payload[1].([]byte)
 
 	tokenAddr := w.cfg.erc20Contract.String()
 	fromAddr := w.cfg.from
-	destAddr := string(addr)
-	w.log.Info("Depositout Tron", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", destAddr, "value", big.NewInt(0).SetBytes(byteValue.Bytes()))
+	destAddr := string(toAddr)
+	strValue := string(value)
+	w.log.Info("Depositout Eth", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", destAddr, "value", strValue)
 
-	return true
+	amout, _ := big.NewInt(0).SetString(strValue, 10)
+
+	nonce, err := w.conn.Client().NonceAt(context.Background(), common.HexToAddress(fromAddr), nil)
+	if err != nil {
+
+		return false
+	}
+	gasPrice, err := w.conn.Client().SuggestGasPrice(context.Background())
+	if err != nil {
+		return false
+	}
+
+	signer := types.HomesteadSigner{}
+	auth := &bind.TransactOpts{
+		From:     common.HexToAddress(fromAddr),
+		Nonce:    new(big.Int).SetUint64(nonce),
+		GasPrice: gasPrice,
+		Signer: func(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
+			keyPair := w.conn.Keypair()
+			if keyPair == nil {
+				return nil, fmt.Errorf("%s can't find", fromAddr)
+			}
+			signature, _ := crypto.Sign(signer.Hash(tx).Bytes(), keyPair.PrivateKey())
+			if err != nil {
+				return nil, err
+			}
+			return tx.WithSignature(signer, signature)
+		},
+	}
+
+	err = w.BridgeTransferIn(auth, w.cfg.erc20Contract, common.HexToAddress(destAddr), amout, big.NewInt(0).SetUint64(uint64(m.Source)), big.NewInt(0).SetUint64(uint64(m.Destination)))
+
+	return err == nil
 }

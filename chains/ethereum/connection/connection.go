@@ -71,6 +71,10 @@ func (conn *Connection) Client() *ethclient.Client {
 	return conn.client
 }
 
+func (conn *Connection) Keypair() *secp256k1.Keypair {
+	return conn.kp
+}
+
 // LatestBlock returns the latest block from the current chain
 func (conn *Connection) LatestBlock() (*big.Int, error) {
 	header, err := conn.client.HeaderByNumber(context.Background(), nil)

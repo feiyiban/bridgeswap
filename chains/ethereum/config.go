@@ -25,7 +25,7 @@ const DefaultKeystorePath = "./keys"
 
 var (
 	BridgeOpt             = "bridge"
-	ERC20Opt              = "erc20"
+	Erc20HandlerOpt       = "erc20"
 	MaxGasPriceOpt        = "maxGasPrice"
 	MinGasPriceOpt        = "minGasPrice"
 	GasLimitOpt           = "gasLimit"
@@ -86,6 +86,11 @@ func parseChainConfig(chainCfg *core.ChainConfig) (*Config, error) {
 		delete(chainCfg.Opts, BridgeOpt)
 	} else {
 		return nil, fmt.Errorf("must provide opts.bridge field for ethereum config")
+	}
+
+	if contract, ok := chainCfg.Opts[Erc20HandlerOpt]; ok {
+		config.erc20Contract = common.HexToAddress(contract)
+		delete(chainCfg.Opts, Erc20HandlerOpt)
 	}
 
 	if gasPrice, ok := chainCfg.Opts[MaxGasPriceOpt]; ok {

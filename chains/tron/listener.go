@@ -48,8 +48,9 @@ func NewListener(conn Connection, cfg *Config, log logger.Logger, bs blockstore.
 		conn:       conn,
 		log:        log,
 		blockstore: bs,
-		stop:       stop,
-		sysErr:     sysErr,
+
+		stop:   stop,
+		sysErr: sysErr,
 		// latestBlock:        metrics.LatestBlock{LastUpdated: time.Now()},
 		blockConfirmations: cfg.blockConfirmations,
 	}
@@ -143,9 +144,9 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 	listen.log.Debug("Querying block for deposit events", "block", latestBlock)
 
 	params := url.Values{}
-	parseURL, err := url.Parse("https://nile.trongrid.io/v1/contracts/TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR/events")
+	parseURL, err := url.Parse(listen.cfg.erc20event)
 	if err != nil {
-		listen.log.Debug("Parse", "https://nile.trongrid.io/v1/contracts/TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR/events", err)
+		listen.log.Debug("Parse", listen.cfg.erc20event, err)
 		return err
 	}
 
@@ -155,7 +156,7 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 	resp, err := http.Get(urlPathWithParams)
 	defer resp.Body.Close()
 	if err != nil {
-		listen.log.Debug("Parse", "https://nile.trongrid.io/v1/contracts/TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR/events", err)
+		listen.log.Debug("Parse", listen.cfg.erc20event, err)
 		return err
 	}
 
@@ -185,16 +186,18 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 
 		listen.log.Debug("Log for event ------>", "selfChainID", selfChainID, "destChainID", destChainID)
 
+		byteTo := []byte(val.Result["to"])
+		byteValue := []byte(val.Result["amount"])
+
 		m := msg.Message{
 			Source:      uint8(selfID.Uint64()),
 			Destination: uint8(destID.Uint64()),
-			Type:        val.EventName,
+			Type:        msg.TokenTransfer,
+			Payload: []interface{}{
+				byteTo,
+				byteValue,
+			},
 		}
-
-		byteTo := []byte(val.Result["to"])
-		byteValue := []byte(val.Result["amount"])
-		m.Payload = append(m.Payload, byteTo...)
-		m.Payload = append(m.Payload, byteValue...)
 
 		listen.log.Debug("Log for event ------>", "Payload", m.Payload)
 
@@ -207,27 +210,6 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 			listen.log.Error("subscription error: failed to route message", "err", err)
 		}
 	}
-	listen.log.Debug("Contract Get Info", "Event", string(body))
-	// l.log.Debug("Querying block for deposit events", "block", latestBlock)
-	// query := buildQuery(l.cfg.bridgeContract, utils.MapTransferOut, latestBlock, latestBlock)
-
-	// querying for logs
-	// logs, err := l.conn.Client().FilterLogs(context.Background(), query)
-	// if err != nil {
-	// 	return fmt.Errorf("unable to Filter Logs: %w", err)
-	// }
-
-	// // read through the log events and handle their deposit event if handler is recognized
-	// for _, log := range logs {
-	// 	var m msg.Message
-	// 	text := fmt.Sprintf("log out:%v", log)
-	// 	l.log.Debug("Log for event ------>", "log", text)
-
-	// 	err = l.router.Send(m)
-	// 	if err != nil {
-	// 		l.log.Error("subscription error: failed to route message", "err", err)
-	// 	}
-	// }
 
 	return nil
 }

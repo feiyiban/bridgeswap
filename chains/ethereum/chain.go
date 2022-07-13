@@ -16,6 +16,7 @@ import (
 
 type Connection interface {
 	Connect() error
+	Keypair() *secp256k1.Keypair
 	Client() *ethclient.Client
 	LatestBlock() (*big.Int, error)
 	// Opts() *bind.TransactOpts

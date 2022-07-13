@@ -3,6 +3,7 @@ package ethereum
 import (
 	"bridgeswap/blockstore"
 	"bridgeswap/logger"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -167,13 +168,21 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 
 		listen.log.Debug("Log for event ------>", "selfChainID", selfChainID, "destChainID", destChainID)
 
+		byteValue := new(bytes.Buffer)
+		byteValue.Write(log.Data[32:64])
+		toAddr := new(bytes.Buffer)
+		toAddr.Write(log.Data[96:130])
+		listen.log.Info("TransferOut", "byteValue", byteValue.Bytes(), "toaddr", toAddr.Bytes())
+
 		m := msg.Message{
 			Source:      selfChainID,
 			Destination: destChainID,
 			Type:        msg.TokenTransfer,
+			Payload: []interface{}{
+				toAddr.Bytes(),
+				byteValue.Bytes(),
+			},
 		}
-
-		m.Payload = append(m.Payload, log.Data...)
 
 		listen.log.Debug("Log for event ------>", "Payload", m.Payload)
 

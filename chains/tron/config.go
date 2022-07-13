@@ -21,6 +21,7 @@ const DefaultGasMultiplier = 1
 var (
 	BridgeOpt             = "bridge"
 	Erc20HandlerOpt       = "erc20"
+	ListenEvent           = "erc20event"
 	MaxGasPriceOpt        = "maxGasPrice"
 	MinGasPriceOpt        = "minGasPrice"
 	GasLimitOpt           = "gasLimit"
@@ -43,6 +44,7 @@ type Config struct {
 	freshStart         bool // Disables loading from blockstore at start
 	bridgeContract     tronaddr.Address
 	erc20Contract      tronaddr.Address
+	erc20event         string
 	gasLimit           *big.Int
 	maxGasPrice        *big.Int
 	minGasPrice        *big.Int
@@ -95,6 +97,11 @@ func parseChainConfig(chainCfg *core.ChainConfig) (*Config, error) {
 			return nil, err
 		}
 		delete(chainCfg.Opts, Erc20HandlerOpt)
+	}
+
+	if tokenevent, ok := chainCfg.Opts[ListenEvent]; ok {
+		config.erc20event = tokenevent
+		delete(chainCfg.Opts, ListenEvent)
 	}
 
 	if gasPrice, ok := chainCfg.Opts[MaxGasPriceOpt]; ok {

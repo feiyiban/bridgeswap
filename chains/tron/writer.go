@@ -3,7 +3,6 @@ package tron
 import (
 	"bridgeswap/controller/core"
 	"bridgeswap/controller/msg"
-	"bytes"
 	"encoding/json"
 	"math/big"
 
@@ -69,27 +68,23 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 	if len(m.Payload) <= 0 {
 		return false
 	}
-	byteValue := new(bytes.Buffer)
-	byteValue.Write(m.Payload[32:64])
-	toAddr := new(bytes.Buffer)
-	toAddr.Write(m.Payload[96:130])
-	w.log.Info("Creating erc20", "src", m.Source, "byteValue", byteValue.Bytes(), "toaddr", toAddr.Bytes())
-	addr := toAddr.Bytes()
+	toAddr := m.Payload[0].([]byte)
+	value := m.Payload[1].([]byte)
 
 	tokenAddr := w.cfg.erc20Contract.String()
 	fromAddr := w.cfg.from
-	destAddr := string(addr)
-	w.log.Info("Depositout Tron", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", destAddr, "value", big.NewInt(0).SetBytes(byteValue.Bytes()))
+	destAddr := string(toAddr)
+	w.log.Info("Depositout Tron", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", destAddr, "value", big.NewInt(0).SetBytes(value))
 
 	param := []tronabi.Param{
 		{"address": tokenAddr},
 		{"address": destAddr},
-		{"uint256": big.NewInt(0).SetBytes(byteValue.Bytes()).String()},
+		{"uint256": big.NewInt(0).SetBytes(value).String()},
 		{"uint256": big.NewInt(int64(m.Source)).String()},
 		{"uint256": big.NewInt(int64(m.Destination)).String()},
 	}
 
-	w.log.Info("hex.EncodeToString", "value", big.NewInt(0).SetBytes(byteValue.Bytes()).String())
+	w.log.Info("hex.EncodeToString", "value", big.NewInt(0).SetBytes(value).String())
 	dataBuf, err := json.Marshal(param)
 	if err != nil {
 		return false
