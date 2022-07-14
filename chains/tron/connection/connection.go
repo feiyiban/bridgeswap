@@ -18,6 +18,7 @@ import (
 	"bridgeswap/chains/tron/pkg/keystore"
 
 	trontransaction "bridgeswap/chains/tron/pkg/client/transaction"
+	tronstore "bridgeswap/chains/tron/pkg/store"
 )
 
 var BlockRetryInterval = time.Second * 5
@@ -129,11 +130,14 @@ func (c *Connection) TransferIn(from, contractAddress, param string, feeLimit in
 	}
 
 	c.log.Info("tron--->bridgeContract--->TransferIn", "tx", tx)
-	var ctrlr *trontransaction.Controller
 
-	ctrlr = trontransaction.NewController(c.Client(), c.key, c.senderAcct, tx.Transaction, opts)
+	ks, acct, err := tronstore.UnlockedKeystore(from, "")
+	if err != nil {
+		return err
+	}
+	ctrlr := trontransaction.NewController(c.Client(), ks, acct, tx.Transaction, opts)
 	if err = ctrlr.ExecuteTransaction(); err != nil {
-		c.log.Error("ExecuteTransaction", err)
+		c.log.Error("ExecuteTransaction", "TransferIn", err)
 		return err
 	}
 

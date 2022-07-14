@@ -8,7 +8,7 @@ chains:
       bridge: '0x99155bCcF403D838F2F643F66450c616F7d2c2A3'
       erc20: '0xA96039f8038899F023f73c55E81C57B8Ab06e7DB'
       http: true
-      startblock: "11010412"
+      startblock: "11016241"
   - name: 'trx'
     type: 'tron'
     id: '2'
@@ -17,5 +17,5 @@ chains:
     opts: 
       bridge: 'TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR'
       erc20: 'TMw3vT2zwWa5vomcqXgcQb3XCfac5kemKe'
-      startblock: "28026160"
-      erc20event: '"https://nile.trongrid.io/v1/contracts/TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR/events"'
+      startblock: "25047040"
+      erc20event: 'https://nile.trongrid.io/v1/contracts/TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR/events'

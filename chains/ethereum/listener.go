@@ -135,7 +135,7 @@ func buildQuery(contract common.Address, sig EventSig, startBlock *big.Int, endB
 		FromBlock: startBlock,
 		ToBlock:   endBlock,
 		Addresses: []common.Address{contract},
-		// Topics: [][]ethcommon.Hash{
+		// Topics: [][]common.Hash{
 		// 	{sig.GetTopic()},
 		// },
 	}
@@ -168,6 +168,10 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 
 		listen.log.Debug("Log for event ------>", "selfChainID", selfChainID, "destChainID", destChainID)
 
+		if len(log.Data) <= 64 {
+			listen.log.Debug("getDepositEventsForBlock ", "tranferIn", "not deal")
+			return nil
+		}
 		byteValue := new(bytes.Buffer)
 		byteValue.Write(log.Data[32:64])
 		toAddr := new(bytes.Buffer)

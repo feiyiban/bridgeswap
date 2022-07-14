@@ -177,6 +177,9 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 
 	for _, val := range data.Data {
 
+		if val.EventName != "MAPTransferOut" {
+			return nil
+		}
 		selfChainID := val.Result["fromChain"]
 		destChainID := val.Result["toChain"]
 
