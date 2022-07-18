@@ -1,7 +1,6 @@
 package tron
 
 import (
-	// metrics "crosschainbridge/controller/metrics/types"
 	"fmt"
 	"math/big"
 	"os"

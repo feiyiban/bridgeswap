@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	// "crosschainbridge/controller/crypto/secp256k1"
 	"bridgeswap/logger"
 
 	"google.golang.org/grpc"

@@ -13,8 +13,6 @@ import (
 	"bridgeswap/blockstore"
 	"bridgeswap/controller/msg"
 
-	// metrics "crosschainbridge/controller/metrics/types"
-
 	"bridgeswap/chains"
 
 	"bridgeswap/logger"
@@ -45,8 +43,8 @@ type listener struct {
 func NewListener(conn Connection, cfg *Config, log logger.Logger, bs blockstore.Blockstorer, stop <-chan int, sysErr chan<- error) *listener {
 	return &listener{
 		cfg:        *cfg,
-		conn:       conn,
 		log:        log,
+		conn:       conn,
 		blockstore: bs,
 
 		stop:   stop,

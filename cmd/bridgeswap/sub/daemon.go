@@ -3,6 +3,7 @@ package sub
 import (
 	"bridgeswap/chains/ethereum"
 	"bridgeswap/chains/tron"
+	"bridgeswap/chains/xfsgo"
 	"bridgeswap/config"
 	"bridgeswap/logger"
 	"fmt"
@@ -55,6 +56,10 @@ func runDaemon() error {
 			newChain, err = ethereum.InitializeChain(chainConfig, log, sysErr)
 		} else if chain.Type == "tron" {
 			newChain, err = tron.InitializeChain(chainConfig, log, sysErr)
+		} else if chain.Type == "xfsgo" {
+			newChain, err = xfsgo.InitializeChain(chainConfig, log, sysErr)
+		} else {
+			logger.Error("chain", fmt.Errorf("%v", "Unsupported chain type"))
 		}
 
 		if err != nil {

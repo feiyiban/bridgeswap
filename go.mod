@@ -51,11 +51,14 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rjeczalik/notify v0.9.2
 	github.com/shengdoushi/base58 v1.0.0
+	github.com/shopspring/decimal v1.3.1
+	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tyler-smith/go-bip39 v1.1.0
-	go.uber.org/zap v1.17.0
+	github.com/younamebert/xfssdk v0.0.0-20220701085415-0472485aa848
+	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 	golang.org/x/sys v0.0.0-20220708085239-5a0f0661e09d
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467
