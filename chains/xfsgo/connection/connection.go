@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
+	"bridgeswap/chains/xfsgo/pkg/types"
 	"bridgeswap/chains/xfsgo/pkg/xfsclient"
 	"bridgeswap/chains/xfsgo/pkg/xfsrpc"
 
@@ -51,6 +52,14 @@ func (c *Connection) LatestBlock() (*big.Int, error) {
 		return nil, err
 	}
 	return header, nil
+}
+
+func (c *Connection) GetLogs(args types.GetLogsRequest) (*[]*types.EventLogResp, error) {
+	eventLog, err := c.conn.GetLogs(context.Background(), args)
+	if err != nil {
+		return nil, err
+	}
+	return eventLog, nil
 }
 
 func (c *Connection) checkChainId(expected uint8) error {

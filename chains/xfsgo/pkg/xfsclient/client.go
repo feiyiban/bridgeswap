@@ -18,10 +18,10 @@
 package xfsclient
 
 import (
+	"bridgeswap/chains/xfsgo/pkg/types"
+	"bridgeswap/chains/xfsgo/pkg/xfsrpc"
 	"context"
 	"math/big"
-
-	"bridgeswap/chains/xfsgo/pkg/xfsrpc"
 )
 
 // Client defines typed wrappers for the Ethereum RPC API.
@@ -66,6 +66,16 @@ func (ec *Client) GetHead(ctx context.Context) (*big.Int, error) {
 	int64Height, _ := bigHeight.Int64()
 
 	return big.NewInt(int64Height), err
+}
+
+func (ec *Client) GetLogs(ctx context.Context, args types.GetLogsRequest) (*[]*types.EventLogResp, error) {
+	eventLog := make([]*types.EventLogResp, 0)
+	err := ec.c.CallContext(ctx, &eventLog, "Chain.GetLogs", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &eventLog, err
 }
 
 // ChainID retrieves the current chain ID for transaction replay protection.

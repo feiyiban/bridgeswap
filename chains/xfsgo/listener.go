@@ -9,11 +9,9 @@ import (
 	"bridgeswap/blockstore"
 	"bridgeswap/chains"
 
-	"bridgeswap/controller/msg"
-
 	"bridgeswap/logger"
 
-	"github.com/ethereum/go-ethereum/common"
+	"bridgeswap/chains/xfsgo/pkg/types"
 )
 
 var (
@@ -120,10 +118,13 @@ func (l *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 	// query := buildQuery(l.cfg.bridgeContract, utils.Deposit, latestBlock, latestBlock)
 
 	// // querying for logs
-	// logs, err := l.conn.Client().FilterLogs(context.Background(), query)
-	// if err != nil {
-	// 	return fmt.Errorf("unable to Filter Logs: %w", err)
-	// }
+	logRequst := types.GetLogsRequest{}
+	logs, err := l.conn.GetLogs(logRequst)
+	if err != nil {
+		return fmt.Errorf("unable to Filter Logs: %w", err)
+	}
+
+	l.log.Info("getDepositEventsForBlock", "result", logs)
 
 	// // read through the log events and handle their deposit event if handler is recognized
 	// for _, log := range logs {
@@ -159,44 +160,4 @@ func (l *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 	// }
 
 	return nil
-}
-
-// processEvents fetches a block and parses out the events, calling Listener.handleEvents()
-func (l *listener) processEvents(hash common.Hash) error {
-	// l.log.Trace("Fetching block for events", "hash", hash.Hex())
-	// meta := l.conn.getMetadata()
-	// key, err := types.CreateStorageKey(&meta, "System", "Events", nil, nil)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// var records types.EventRecordsRaw
-	// _, err = l.conn.api.RPC.State.GetStorage(key, &records, hash)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// e := utils.Events{}
-	// err = records.DecodeEventRecords(&meta, &e)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// l.handleEvents(e)
-	// l.log.Trace("Finished processing events", "block", hash.Hex())
-
-	return nil
-}
-
-// submitMessage inserts the chainId into the msg and sends it to the router
-func (l *listener) submitMessage(m msg.Message, err error) {
-	if err != nil {
-		logger.Error("Critical error processing event", "err", err)
-		return
-	}
-	m.Source = l.cfg.id
-	err = l.router.Send(m)
-	if err != nil {
-		logger.Error("failed to process event", "err", err)
-	}
 }

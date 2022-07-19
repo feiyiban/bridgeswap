@@ -23,6 +23,7 @@ package xfsgo
 import (
 	"bridgeswap/blockstore"
 	"bridgeswap/chains/xfsgo/connection"
+	"bridgeswap/chains/xfsgo/pkg/types"
 	"bridgeswap/chains/xfsgo/pkg/xfsclient"
 	"bridgeswap/controller/core"
 	"bridgeswap/logger"
@@ -34,6 +35,7 @@ type Connection interface {
 	Client() *xfsclient.Client
 	LatestBlock() (*big.Int, error)
 	TransferIn(token, contractAddress, param string, feeLimit int64, tAmount float64, tTokenID string, tTokenAmount int64) error
+	GetLogs(args types.GetLogsRequest) (*[]*types.EventLogResp, error)
 }
 
 type Chain struct {
