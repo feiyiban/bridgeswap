@@ -18,10 +18,13 @@
 package xfsclient
 
 import (
+	"bridgeswap/chains/xfsgo/pkg/common"
 	"bridgeswap/chains/xfsgo/pkg/types"
 	"bridgeswap/chains/xfsgo/pkg/xfsrpc"
 	"context"
+	"fmt"
 	"math/big"
+	"strconv"
 )
 
 // Client defines typed wrappers for the Ethereum RPC API.
@@ -51,6 +54,78 @@ func (ec *Client) Close() {
 	ec.c.Close()
 }
 
+func (ec *Client) SignedTx(ctx context.Context, args types.StringRawTransaction) (*string, error) {
+
+	if args.Version == "" {
+		args.Version = "0"
+	}
+	if args.Value == "" {
+		args.Value = "0"
+	}
+
+	if args.Nonce == "" {
+		reqGetNonce := &types.GetAddrNonceByHashArgs{
+			Address: args.From,
+		}
+		var nonce *int64
+		err := ec.c.CallContext(ctx, reqGetNonce, "TxPool.GetAddrTxNonce", &nonce)
+		if err != nil {
+			return nil, err
+		}
+		args.Nonce = strconv.FormatInt(*nonce, 10)
+	}
+
+	if args.GasLimit == "" {
+		args.GasLimit = common.TxGas.String()
+	} else {
+		gaslimit, ok := new(big.Int).SetString(args.GasLimit, 10)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse gaslimit")
+		}
+		if gaslimit.Cmp(common.TxGas) < 0 {
+			return nil, fmt.Errorf("gaslimit did not reach the lowest peugeot")
+		}
+	}
+
+	if args.GasLimit == "" {
+		args.GasLimit = common.TxGas.String()
+	} else {
+		gaslimit, ok := new(big.Int).SetString(args.GasLimit, 10)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse gaslimit")
+		}
+		if gaslimit.Cmp(common.TxGas) < 0 {
+			return nil, fmt.Errorf("gaslimit did not reach the lowest peugeot")
+		}
+		args.GasLimit = gaslimit.Text(10)
+	}
+
+	if args.GasPrice == "" {
+		args.GasPrice = common.DefaultGasPrice().String()
+	} else {
+		gasprice, ok := new(big.Int).SetString(args.GasPrice, 10)
+		if !ok {
+			return nil, fmt.Errorf("failed to parse gaslimit")
+		}
+		if gasprice.Cmp(common.DefaultGasPrice()) < 0 {
+			return nil, fmt.Errorf("gasprice did not reach the lowest peugeot")
+		}
+		args.GasLimit = gasprice.Text(10)
+	}
+	if err := args.SignWithPrivateKey(""); err != nil {
+		return nil, err
+	}
+
+	result, err := args.Transfer2Raw()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &result
+
+	return response, nil
+}
+
 // Blockchain Access
 func (ec *Client) GetHead(ctx context.Context) (*big.Int, error) {
 	block := make(map[string]interface{}, 1)
@@ -76,6 +151,16 @@ func (ec *Client) GetLogs(ctx context.Context, args types.GetLogsRequest) (*[]*t
 	}
 
 	return &eventLog, err
+}
+
+func (ec *Client) SendRawTransaction(ctx context.Context, rawTx string) (string, error) {
+	var txHash string
+	err := ec.c.CallContext(ctx, &txHash, "TxPool.SendRawTransaction", rawTx)
+	if err != nil {
+		return "", err
+	}
+
+	return txHash, err
 }
 
 // ChainID retrieves the current chain ID for transaction replay protection.

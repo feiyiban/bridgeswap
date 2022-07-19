@@ -2,7 +2,11 @@ package xfsgo
 
 import (
 	"errors"
+	"math/big"
 
+	"bridgeswap/bindings/xfs/xfsbridge"
+	"bridgeswap/chains/xfsgo/pkg/common"
+	"bridgeswap/chains/xfsgo/pkg/types"
 	"bridgeswap/controller/core"
 
 	"bridgeswap/controller/msg"
@@ -48,7 +52,40 @@ func (w *writer) ResolveMessage(m msg.Message) bool {
 
 func (w *writer) ResolveErc20(m msg.Message) bool {
 
+	var depositorAddress = ""
+	var amount = ""
+	var fromChainID = ""
+
 	w.log.Info("ResolveErc20", "m.Payload", m.Payload)
+
+	value, ok := new(big.Int).SetString(amount, 10)
+	if !ok {
+		return false
+	}
+
+	chainID, ok := new(big.Int).SetString(fromChainID, 10)
+	if !ok {
+		return false
+	}
+
+	abi, err := xfsbridge.JSON(xfsbridge.BRIDGETOKENABI)
+	addr := common.StrB58ToAddress(depositorAddress)
+	cTypeAddr := xfsbridge.NewAddress(addr)
+
+	data, err := abi.TransferIn(cTypeAddr, xfsbridge.NewUint256(value), xfsbridge.NewUint256(chainID))
+	if err != nil {
+		return false
+	}
+
+	rawTx := types.StringRawTransaction{
+		Data: data,
+	}
+	strRawTx, err := w.conn.SignedTx(rawTx)
+	if err != nil {
+		return false
+	}
+
+	w.conn.SendRawTransaction(*strRawTx)
 
 	w.conn.TransferIn("", "", "", 0, 0, "", 10)
 

@@ -35,6 +35,8 @@ type Connection interface {
 	Client() *xfsclient.Client
 	LatestBlock() (*big.Int, error)
 	TransferIn(token, contractAddress, param string, feeLimit int64, tAmount float64, tTokenID string, tTokenAmount int64) error
+	SendRawTransaction(rawTx string) (string, error)
+	SignedTx(args types.StringRawTransaction) (*string, error)
 	GetLogs(args types.GetLogsRequest) (*[]*types.EventLogResp, error)
 }
 

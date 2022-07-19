@@ -62,6 +62,22 @@ func (c *Connection) GetLogs(args types.GetLogsRequest) (*[]*types.EventLogResp,
 	return eventLog, nil
 }
 
+func (c *Connection) SignedTx(args types.StringRawTransaction) (*string, error) {
+	eventLog, err := c.conn.SignedTx(context.Background(), args)
+	if err != nil {
+		return nil, err
+	}
+	return eventLog, nil
+}
+
+func (c *Connection) SendRawTransaction(rawTx string) (string, error) {
+	txHash, err := c.conn.SendRawTransaction(context.Background(), rawTx)
+	if err != nil {
+		return "", err
+	}
+	return txHash, nil
+}
+
 func (c *Connection) checkChainId(expected uint8) error {
 	// var actual msg.ChainId
 	// err := c.getConst(BridgePalletName, "ChainIdentity", &actual)
