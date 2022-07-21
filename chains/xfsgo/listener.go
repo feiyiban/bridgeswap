@@ -4,14 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
+	"bridgeswap/bindings/xfs/events"
+	"bridgeswap/bindings/xfs/xfsbridge"
 	"bridgeswap/blockstore"
 	"bridgeswap/chains"
+	"bridgeswap/chains/xfsgo/types"
+	"bridgeswap/controller/msg"
 
 	"bridgeswap/logger"
-
-	"bridgeswap/chains/xfsgo/pkg/types"
 )
 
 var (
@@ -24,11 +27,10 @@ type listener struct {
 	cfg        Config
 	conn       Connection
 	blockstore blockstore.Blockstorer
-
-	router chains.Router
-	log    logger.Logger
-	stop   <-chan int
-	sysErr chan<- error
+	router     chains.Router
+	log        logger.Logger
+	stop       <-chan int
+	sysErr     chan<- error
 }
 
 func NewListener(conn Connection, cfg *Config, log logger.Logger, bs blockstore.Blockstorer, stop <-chan int, sysErr chan<- error) *listener {
@@ -117,47 +119,68 @@ func (l *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 	l.log.Debug("Querying block for deposit events", "block", latestBlock)
 	// query := buildQuery(l.cfg.bridgeContract, utils.Deposit, latestBlock, latestBlock)
 
-	// // querying for logs
-	logRequst := types.GetLogsRequest{}
+	// querying for logs
+	logRequst := types.GetLogsRequest{
+		FromBlock: latestBlock.String(),
+		ToBlock:   latestBlock.String(),
+		Address:   l.cfg.bridgeContract,
+		EventHash: xfsbridge.TransoutEvent,
+	}
 	logs, err := l.conn.GetLogs(logRequst)
 	if err != nil {
 		return fmt.Errorf("unable to Filter Logs: %w", err)
 	}
 
-	l.log.Info("getDepositEventsForBlock", "result", logs)
+	for _, log := range *logs {
+		l.log.Info("getDepositEventsForBlock", "result", log)
 
-	// // read through the log events and handle their deposit event if handler is recognized
-	// for _, log := range logs {
-	// 	var m msg.Message
-	// 	destId := msg.ChainId(log.Topics[1].Big().Uint64())
-	// 	rId := msg.ResourceIdFromSlice(log.Topics[2].Bytes())
-	// 	nonce := msg.Nonce(log.Topics[3].Big().Uint64())
+		if log.EventHash.Hex() == xfsbridge.TransoutEvent {
+			event, err := events.JSON(xfsbridge.BRIDGETOKENABI)
+			if err != nil {
+				return err
+			}
 
-	// 	addr, err := l.bridgeContract.ResourceIDToHandlerAddress(&bind.CallOpts{From: l.conn.Keypair().CommonAddress()}, rId)
-	// 	if err != nil {
-	// 		return fmt.Errorf("failed to get handler from resource ID %x", rId)
-	// 	}
+			val, err := event.Decode(xfsbridge.TransoutEvent, strings.TrimPrefix(log.EventValue, "0x"))
+			if err != nil {
+				return err
+			}
 
-	// 	if addr == l.cfg.erc20HandlerContract {
-	// 		m, err = l.handleErc20DepositedEvent(destId, nonce)
-	// 	} else if addr == l.cfg.erc721HandlerContract {
-	// 		m, err = l.handleErc721DepositedEvent(destId, nonce)
-	// 	} else if addr == l.cfg.genericHandlerContract {
-	// 		m, err = l.handleGenericDepositedEvent(destId, nonce)
-	// 	} else {
-	// 		l.log.Error("event has unrecognized handler", "handler", addr.Hex())
-	// 		return nil
-	// 	}
+			fromChainID := val["fromChainId"].(string)
 
-	// 	if err != nil {
-	// 		return err
-	// 	}
+			fromID, ok := new(big.Int).SetString(fromChainID, 10)
+			if !ok {
+				return err
+			}
+			toChainID := val["toChainId"].(string)
+			toID, ok := new(big.Int).SetString(toChainID, 10)
+			if !ok {
+				return err
+			}
+			toAddr := val["toAddress"].(string)
+			value := val["value"].(string)
 
-	// 	err = l.router.Send(m)
-	// 	if err != nil {
-	// 		l.log.Error("subscription error: failed to route message", "err", err)
-	// 	}
-	// }
+			m := msg.Message{
+				Source:      uint8(fromID.Uint64()),
+				Destination: uint8(toID.Uint64()),
+				Type:        msg.TokenTransfer,
+				Payload: []interface{}{
+					toAddr,
+					value,
+				},
+			}
+
+			if err != nil {
+				return err
+			}
+
+			l.log.Info("message", "source:", m.Source, "destination:", m.Destination, "toAddr:", toAddr, "value", value)
+			err = l.router.Send(m)
+			if err != nil {
+				l.log.Error("subscription error: failed to route message", "err", err)
+			}
+
+		}
+	}
 
 	return nil
 }

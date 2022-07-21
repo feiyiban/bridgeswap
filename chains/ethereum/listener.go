@@ -172,19 +172,34 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 			listen.log.Debug("getDepositEventsForBlock ", "tranferIn", "not deal")
 			return nil
 		}
-		byteValue := new(bytes.Buffer)
-		byteValue.Write(log.Data[32:64])
-		toAddr := new(bytes.Buffer)
-		toAddr.Write(log.Data[96:130])
-		listen.log.Info("TransferOut", "byteValue", byteValue.Bytes(), "toaddr", toAddr.Bytes())
 
+		bufferValue := new(bytes.Buffer)
+		bufferValue.Write(log.Data[32:64])
+		byteValue := bufferValue.Bytes()
+		listen.log.Info("TransferOut--------->", "byteValue", byteValue)
+
+		bufferAddrLenght := new(bytes.Buffer)
+		bufferAddrLenght.Write(log.Data[64:96])
+		byteAddrLength := bufferAddrLenght.Bytes()
+		listen.log.Info("TransferOut--------->", "byteAddrLength", byteAddrLength)
+
+		intLenght := big.NewInt(0).SetBytes(byteAddrLength)
+		if err != nil {
+			listen.log.Debug("getDepositEventsForBlock ", "strconv.Atoi", err)
+			return nil
+		}
+		bufferAddr := new(bytes.Buffer)
+		bufferAddr.Write(log.Data[96 : 96+intLenght.Int64()])
+
+		byteAddr := bufferAddr.Bytes()
+		listen.log.Info("TransferOut--------->", "toaddr", byteAddr)
 		m := msg.Message{
 			Source:      selfChainID,
 			Destination: destChainID,
 			Type:        msg.TokenTransfer,
 			Payload: []interface{}{
-				toAddr.Bytes(),
-				byteValue.Bytes(),
+				string(byteAddr),
+				big.NewInt(0).SetBytes(byteValue).String(),
 			},
 		}
 

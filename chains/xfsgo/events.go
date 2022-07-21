@@ -21,17 +21,6 @@ var Subscriptions = []struct {
 }
 
 func genericTransferHandler(evtI interface{}, log logger.Logger) (msg.Message, error) {
-	// evt, ok := evtI.(events.EventGenericTransfer)
-	// if !ok {
-	// 	return msg.Message{}, fmt.Errorf("failed to cast EventGenericTransfer type")
-	// }
 
-	// log.Info("Got generic transfer event!", "destination", evt.Destination, "resourceId", evt.ResourceId)
-
-	// return msg.NewGenericTransfer(
-	// 	0, // Unset
-	// 	msg.ChainId(evt.Destination),
-
-	// ), nil
 	return msg.Message{}, nil
 }

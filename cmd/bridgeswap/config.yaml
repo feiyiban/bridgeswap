@@ -1,14 +1,14 @@
 chains:
-  # - name: 'eth'
-  #   type: 'ethereum'
-  #   id: '1'
-  #   endpoint: 'https://rinkeby.infura.io/v3/a64cc9552107441e8a9c6de95692045f'
-  #   from: '0x39FDeD8CE4Aca2B674eF863d8C4E93bD15718101'
-  #   opts: 
-  #     bridge: '0x99155bCcF403D838F2F643F66450c616F7d2c2A3'
-  #     erc20: '0xA96039f8038899F023f73c55E81C57B8Ab06e7DB'
-  #     http: true
-  #     startblock: "11016241"
+  - name: 'eth'
+    type: 'ethereum'
+    id: '1'
+    endpoint: 'https://rinkeby.infura.io/v3/a64cc9552107441e8a9c6de95692045f'
+    from: '0x39FDeD8CE4Aca2B674eF863d8C4E93bD15718101'
+    opts: 
+      bridge: '0x99155bCcF403D838F2F643F66450c616F7d2c2A3'
+      erc20: '0xA96039f8038899F023f73c55E81C57B8Ab06e7DB'
+      http: true
+      startblock: "11016241"
   # - name: 'trx'
   #   type: 'tron'
   #   id: '2'
@@ -22,8 +22,9 @@ chains:
   - name: 'xfs'
     type: 'xfsgo'
     id: '3'
-    endpoint: 'http://192.168.2.30:9012'
-    from: 'V8fqDpdNpbMvb8th1HXEh7hm5W6iCz1Hd'
+    endpoint: 'http://127.0.0.1:9012'
+    from: 'heX5LmNrdedHhTHgCUtBb2MjXUM9fMdPL'
     opts: 
-      bridge: 'TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR'
-      erc20: 'a59Gj6e5JzeBvQY3urKr7E371h255yguP'
+      bridge: 'V1S9vhGENSkoMrSzjuGts8AB6DNXjYQsq'
+      erc20: 'mvYLn5MD8r7VeJGdHbDbxsQhJ4qSEuz67'
+      startblock: "20"

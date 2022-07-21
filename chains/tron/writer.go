@@ -68,23 +68,22 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 	if len(m.Payload) <= 0 {
 		return false
 	}
-	toAddr := m.Payload[0].([]byte)
-	value := m.Payload[1].([]byte)
+	toAddr := m.Payload[0].(string)
+	value := m.Payload[1].(string)
 
 	tokenAddr := w.cfg.erc20Contract.String()
 	fromAddr := w.cfg.from
-	destAddr := string(toAddr)
-	w.log.Info("Depositout Tron", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", destAddr, "value", big.NewInt(0).SetBytes(value))
+	w.log.Info("Depositout Tron", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", toAddr, "value", value)
 
 	param := []tronabi.Param{
 		{"address": tokenAddr},
-		{"address": destAddr},
-		{"uint256": big.NewInt(0).SetBytes(value).String()},
+		{"address": toAddr},
+		{"uint256": value},
 		{"uint256": big.NewInt(int64(m.Source)).String()},
 		{"uint256": big.NewInt(int64(m.Destination)).String()},
 	}
 
-	w.log.Info("hex.EncodeToString", "value", big.NewInt(0).SetBytes(value).String())
+	w.log.Info("hex.EncodeToString", "value", value)
 	dataBuf, err := json.Marshal(param)
 	if err != nil {
 		return false

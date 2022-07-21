@@ -2,20 +2,18 @@ package core
 
 type Chain interface {
 	SetRouter(*Router)
-	Start() error // Start chain
+	Start() error
 	ID() uint8
 	Name() string
 	Stop()
 }
 
 type ChainConfig struct {
-	Name           string // Human-readable chain name
-	ID             uint8  // ChainID
-	Http           bool
-	Endpoint       string            // url for rpc endpoint
-	From           string            // address of key to use
+	Name           string            // Human-readable chain name
+	ID             uint8             // Human-readable chain id
+	Endpoint       string            // Url for client endpoint
+	From           string            // External account address and Manage its private key
 	KeystorePath   string            // Location of key files
-	Insecure       bool              // Indicated whether the test keyring should be used
 	BlockstorePath string            // Location of blockstore
 	FreshStart     bool              // If true, blockstore is ignored at start.
 	LatestBlock    bool              // If true, overrides blockstore or latest block in config and starts from current block

@@ -1,42 +1,21 @@
-/*
-The substrate package contains the logic for interacting with substrate chains.
-The current supported transfer types are Fungible, Nonfungible, and generic.
-
-There are 3 major components: the connection, the listener, and the writer.
-
-Connection
-
-The Connection handles connecting to the substrate client, and submitting transactions to the client.
-It also handles state queries. The connection is shared by the writer and listener.
-
-Listener
-
-The substrate listener polls blocks and parses the associated events for the three transfer types. It then forwards these into the router.
-
-Writer
-
-As the writer receives messages from the router, it constructs proposals. If a proposal is still active, the writer will attempt to vote on it. Resource IDs are resolved to method name on-chain, which are then used in the proposals when constructing the resulting Call struct.
-
-*/
 package xfsgo
 
 import (
 	"bridgeswap/blockstore"
 	"bridgeswap/chains/xfsgo/connection"
-	"bridgeswap/chains/xfsgo/pkg/types"
-	"bridgeswap/chains/xfsgo/pkg/xfsclient"
+	"bridgeswap/chains/xfsgo/types"
 	"bridgeswap/controller/core"
 	"bridgeswap/logger"
+	"bridgeswap/sdk/xfs/rpcclient"
 	"math/big"
 )
 
 type Connection interface {
 	Connect() error
-	Client() *xfsclient.Client
+	Client() *rpcclient.Client
 	LatestBlock() (*big.Int, error)
-	TransferIn(token, contractAddress, param string, feeLimit int64, tAmount float64, tTokenID string, tTokenAmount int64) error
 	SendRawTransaction(rawTx string) (string, error)
-	SignedTx(args types.StringRawTransaction) (*string, error)
+	SignedTx(args types.StringRawTransaction) (string, error)
 	GetLogs(args types.GetLogsRequest) (*[]*types.EventLogResp, error)
 }
 
@@ -76,7 +55,7 @@ func InitializeChain(cfg *core.ChainConfig, log logger.Logger, sysErr chan<- err
 
 	stop := make(chan int)
 	// Setup connection
-	conn := connection.NewConnection(xfsCfg.endpoint, xfsCfg.http, xfsCfg.name, nil, log, stop, sysErr)
+	conn := connection.NewConnection(xfsCfg.endpoint, xfsCfg.name, nil, log, stop, sysErr)
 	err = conn.Connect()
 	if err != nil {
 		log.Debug("Connection", cfg.ID, err)
@@ -87,7 +66,7 @@ func InitializeChain(cfg *core.ChainConfig, log logger.Logger, sysErr chan<- err
 
 	// Setup listener & writer
 	l := NewListener(conn, xfsCfg, log, bs, stop, sysErr)
-	w := NewWriter(conn, log, sysErr, ue)
+	w := NewWriter(conn, xfsCfg, log, sysErr, ue)
 	return &Chain{
 		cfg:      cfg,
 		conn:     conn,
@@ -97,39 +76,39 @@ func InitializeChain(cfg *core.ChainConfig, log logger.Logger, sysErr chan<- err
 	}, nil
 }
 
-func (c *Chain) SetRouter(r *core.Router) {
-	c.writer.log.Info("SetRouter")
-	r.Listen(c.cfg.ID, c.writer)
-	c.listener.setRouter(r)
+func (chain *Chain) SetRouter(r *core.Router) {
+	chain.writer.log.Info("SetRouter")
+	r.Listen(chain.cfg.ID, chain.writer)
+	chain.listener.setRouter(r)
 }
 
-func (c *Chain) Start() error {
-	c.writer.log.Debug("started chain...")
-	err := c.listener.start()
+func (chain *Chain) Start() error {
+	chain.writer.log.Debug("started chain...")
+	err := chain.listener.start()
 	if err != nil {
 		return err
 	}
 
-	err = c.writer.start()
+	err = chain.writer.start()
 	if err != nil {
 		return err
 	}
 
-	c.writer.log.Debug("Successfully started chain")
+	chain.writer.log.Debug("Successfully started chain")
 	return nil
 }
 
-func (c *Chain) ID() uint8 {
-	return c.cfg.ID
+func (chain *Chain) ID() uint8 {
+	return chain.cfg.ID
 }
 
-func (c *Chain) Name() string {
-	return c.cfg.Name
+func (chain *Chain) Name() string {
+	return chain.cfg.Name
 }
 
-func (c *Chain) Stop() {
-	close(c.stop)
-	if c.conn != nil {
+func (chain *Chain) Stop() {
+	close(chain.stop)
+	if chain.conn != nil {
 		// c.conn.Close()
 	}
 }

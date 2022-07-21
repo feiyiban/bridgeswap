@@ -40,6 +40,7 @@ require (
 	github.com/ethereum/go-ethereum v1.10.20
 	github.com/fatih/color v1.13.0
 	github.com/fsnotify/fsnotify v1.5.4
+	github.com/go-resty/resty/v2 v2.7.0
 	github.com/go-stack/stack v1.8.1
 	github.com/golang/protobuf v1.5.2
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect

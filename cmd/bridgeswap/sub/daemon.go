@@ -43,7 +43,6 @@ func runDaemon() error {
 		chainConfig := &core.ChainConfig{
 			Name:     chain.Name,
 			ID:       uint8(chainId),
-			Http:     chain.Http,
 			Endpoint: chain.Endpoint,
 			From:     chain.From,
 			Opts:     chain.Opts,

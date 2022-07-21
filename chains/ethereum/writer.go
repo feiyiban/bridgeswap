@@ -70,16 +70,14 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 		return false
 	}
 
-	toAddr := m.Payload[0].([]byte)
-	value := m.Payload[1].([]byte)
+	toAddr := m.Payload[0].(string)
+	value := m.Payload[1].(string)
 
 	tokenAddr := w.cfg.erc20Contract.String()
 	fromAddr := w.cfg.from
-	destAddr := string(toAddr)
-	strValue := string(value)
-	w.log.Info("Depositout Eth", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", destAddr, "value", strValue)
+	w.log.Info("Depositout Eth", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", toAddr, "value", value)
 
-	amout, _ := big.NewInt(0).SetString(strValue, 10)
+	amout, _ := big.NewInt(0).SetString(value, 10)
 
 	nonce, err := w.conn.Client().NonceAt(context.Background(), common.HexToAddress(fromAddr), nil)
 	if err != nil {
@@ -109,7 +107,7 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 		},
 	}
 
-	err = w.BridgeTransferIn(auth, w.cfg.erc20Contract, common.HexToAddress(destAddr), amout, big.NewInt(0).SetUint64(uint64(m.Source)), big.NewInt(0).SetUint64(uint64(m.Destination)))
+	err = w.BridgeTransferIn(auth, w.cfg.erc20Contract, common.HexToAddress(toAddr), amout, big.NewInt(0).SetUint64(uint64(m.Source)), big.NewInt(0).SetUint64(uint64(m.Destination)))
 
 	return err == nil
 }

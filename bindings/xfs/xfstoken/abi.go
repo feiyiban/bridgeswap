@@ -1,7 +1,7 @@
 package xfstoken
 
 import (
-	"bridgeswap/chains/xfsgo/pkg/common"
+	"bridgeswap/sdk/xfs/common"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"

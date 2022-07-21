@@ -37,10 +37,7 @@ var keyMapping = map[string]string{
 
 // KeypairFromAddress attempts to load the encrypted key file for the provided address,
 // prompting the user for the password.
-func KeypairFromAddress(addr, chainType, path string, insecure bool) (crypto.Keypair, error) {
-	if insecure {
-		return insecureKeypairFromAddress(path, chainType)
-	}
+func KeypairFromAddress(addr, chainType, path string) (crypto.Keypair, error) {
 	if path == "" {
 		path = config.DefaultEthKeystorePath
 	}

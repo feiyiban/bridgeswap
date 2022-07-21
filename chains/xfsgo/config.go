@@ -8,9 +8,20 @@ import (
 	"bridgeswap/controller/core"
 )
 
+const (
+	DefaultGasLimit           = 6721975
+	DefaultGasPrice           = 20000000000
+	DefaultMinGasPrice        = 0
+	DefaultBlockConfirmations = 2
+	DefaultGasMultiplier      = 1
+)
+
 var (
-	HttpOpt       = "http"
-	StartBlockOpt = "startblock"
+	HttpOpt               = "http"
+	StartBlockOpt         = "startblock"
+	BridgeOpt             = "bridge"
+	Erc20HandlerOpt       = "erc20"
+	BlockConfirmationsOpt = "blockConfirmations"
 )
 
 type Config struct {
@@ -19,8 +30,9 @@ type Config struct {
 	endpoint           string // url for rpc endpoint
 	http               bool   // Config for type of connection
 	from               string // address of key to use
+	bridgeContract     string
+	erc20Contract      string
 	keystorePath       string // Location of key files
-	insecure           bool   // Indicated whether the test keyring should be used
 	blockstorePath     string // Location of blockstore
 	freshStart         bool   // If true, blockstore is ignored at start.
 	startBlock         *big.Int
@@ -39,8 +51,9 @@ func parseChainConfig(chainCfg *core.ChainConfig) (*Config, error) {
 		startBlock:         big.NewInt(0),
 		blockConfirmations: big.NewInt(0),
 		from:               chainCfg.From,
+		bridgeContract:     "",
+		erc20Contract:      "",
 		keystorePath:       chainCfg.KeystorePath,
-		insecure:           chainCfg.Insecure,
 		blockstorePath:     chainCfg.BlockstorePath,
 		freshStart:         chainCfg.FreshStart,
 		latestBlock:        chainCfg.LatestBlock,
@@ -64,6 +77,32 @@ func parseChainConfig(chainCfg *core.ChainConfig) (*Config, error) {
 		} else {
 			return nil, fmt.Errorf("unable to parse %s", StartBlockOpt)
 		}
+	}
+
+	if contract, ok := chainCfg.Opts[BridgeOpt]; ok && contract != "" {
+		config.bridgeContract = contract
+		delete(chainCfg.Opts, BridgeOpt)
+	} else {
+		return nil, fmt.Errorf("must provide opts.bridge field for ethereum config")
+	}
+
+	if contract, ok := chainCfg.Opts[Erc20HandlerOpt]; ok {
+		config.erc20Contract = contract
+		delete(chainCfg.Opts, Erc20HandlerOpt)
+	}
+
+	if blockConfirmations, ok := chainCfg.Opts[BlockConfirmationsOpt]; ok && blockConfirmations != "" {
+		val := big.NewInt(DefaultBlockConfirmations)
+		_, pass := val.SetString(blockConfirmations, 10)
+		if pass {
+			config.blockConfirmations = val
+			delete(chainCfg.Opts, BlockConfirmationsOpt)
+		} else {
+			return nil, fmt.Errorf("unable to parse %s", BlockConfirmationsOpt)
+		}
+	} else {
+		config.blockConfirmations = big.NewInt(DefaultBlockConfirmations)
+		delete(chainCfg.Opts, BlockConfirmationsOpt)
 	}
 
 	return config, nil

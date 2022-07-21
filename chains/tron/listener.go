@@ -195,8 +195,8 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 			Destination: uint8(destID.Uint64()),
 			Type:        msg.TokenTransfer,
 			Payload: []interface{}{
-				byteTo,
-				byteValue,
+				string(byteTo),
+				string(byteValue),
 			},
 		}
 

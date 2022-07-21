@@ -5,9 +5,9 @@ import (
 	"math/big"
 
 	"bridgeswap/bindings/xfs/xfsbridge"
-	"bridgeswap/chains/xfsgo/pkg/common"
-	"bridgeswap/chains/xfsgo/pkg/types"
+	"bridgeswap/chains/xfsgo/types"
 	"bridgeswap/controller/core"
+	"bridgeswap/sdk/xfs/common"
 
 	"bridgeswap/controller/msg"
 	"bridgeswap/logger"
@@ -18,14 +18,16 @@ var _ core.Writer = &writer{}
 var TerminatedError = errors.New("terminated")
 
 type writer struct {
+	cfg        Config
 	conn       Connection
 	log        logger.Logger
 	sysErr     chan<- error
 	extendCall bool // Extend extrinsic calls to substrate with ResourceID.Used for backward compatibility with example pallet.
 }
 
-func NewWriter(conn Connection, log logger.Logger, sysErr chan<- error, extendCall bool) *writer {
+func NewWriter(conn Connection, cfg *Config, log logger.Logger, sysErr chan<- error, extendCall bool) *writer {
 	return &writer{
+		cfg:        *cfg,
 		conn:       conn,
 		log:        log,
 		sysErr:     sysErr,
@@ -52,32 +54,41 @@ func (w *writer) ResolveMessage(m msg.Message) bool {
 
 func (w *writer) ResolveErc20(m msg.Message) bool {
 
-	var depositorAddress = ""
-	var amount = ""
-	var fromChainID = ""
-
 	w.log.Info("ResolveErc20", "m.Payload", m.Payload)
 
-	value, ok := new(big.Int).SetString(amount, 10)
-	if !ok {
+	if len(m.Payload) <= 0 {
 		return false
 	}
 
-	chainID, ok := new(big.Int).SetString(fromChainID, 10)
+	fromId := big.NewInt(0).SetUint64(uint64(m.Source))
+	toAddr := m.Payload[0].(string)
+	value := m.Payload[1].(string)
+
+	tokenAddr := w.cfg.erc20Contract
+	fromAddr := w.cfg.from
+	destAddr := string(toAddr)
+	w.log.Info("Depositout XFS", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", destAddr, "value", value)
+
+	w.log.Info("ResolveErc20", "m.Payload", m.Payload)
+
+	amount, ok := new(big.Int).SetString(value, 10)
 	if !ok {
 		return false
 	}
 
 	abi, err := xfsbridge.JSON(xfsbridge.BRIDGETOKENABI)
-	addr := common.StrB58ToAddress(depositorAddress)
-	cTypeAddr := xfsbridge.NewAddress(addr)
-
-	data, err := abi.TransferIn(cTypeAddr, xfsbridge.NewUint256(value), xfsbridge.NewUint256(chainID))
+	if err != nil {
+		return false
+	}
+	cAddr := common.StrB58ToAddress(toAddr)
+	data, err := abi.TransferIn(xfsbridge.NewAddress(cAddr), xfsbridge.NewUint256(amount), xfsbridge.NewUint256(fromId))
 	if err != nil {
 		return false
 	}
 
 	rawTx := types.StringRawTransaction{
+		From: w.cfg.from,
+		To:   w.cfg.bridgeContract,
 		Data: data,
 	}
 	strRawTx, err := w.conn.SignedTx(rawTx)
@@ -85,9 +96,13 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 		return false
 	}
 
-	w.conn.SendRawTransaction(*strRawTx)
+	txHash, err := w.conn.SendRawTransaction(strRawTx)
 
-	w.conn.TransferIn("", "", "", 0, 0, "", 10)
+	if err != nil {
+		return false
+	}
+
+	w.log.Info("XFS", "SendRawTransaction successfully", txHash)
 
 	return true
 }
