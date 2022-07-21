@@ -37,33 +37,33 @@ func NewWriter(conn Connection, cfg *Config, log logger.Logger, stop <-chan int,
 	}
 }
 
-func (w *writer) start() error {
-	w.log.Debug("Starting tron writer...")
+func (write *writer) start() error {
+	write.log.Debug("Starting tron writer...")
 	return nil
 }
 
 // setContract adds the bound receiver bridgeContract to the writer
-func (w *writer) setContract(bridge string) {
-	w.bridgeContract = bridge
+func (write *writer) setContract(bridge string) {
+	write.bridgeContract = bridge
 }
 
 // ResolveMessage handles any given message based on type
 // A bool is returned to indicate failure/success, this should be ignored except for within tests.
-func (w *writer) ResolveMessage(m msg.Message) bool {
-	w.log.Info("Attempting to resolve message", "type", m.Type, "src", m.Source, "dst", m.Destination)
+func (write *writer) ResolveMessage(m msg.Message) bool {
+	write.log.Info("Attempting to resolve message", "type", m.Type, "src", m.Source, "dst", m.Destination)
 
 	switch m.Type {
 	case msg.TokenTransfer:
-		return w.ResolveErc20(m)
+		return write.ResolveERCToken(m)
 	default:
-		w.log.Error("Unknown message type received", "type", m.Type)
+		write.log.Error("Unknown message type received", "type", m.Type)
 		return false
 	}
 }
 
-func (w *writer) ResolveErc20(m msg.Message) bool {
+func (write *writer) ResolveERCToken(m msg.Message) bool {
 
-	w.log.Info("ResolveErc20", "m.Payload", m.Payload)
+	write.log.Info("ResolveErc20", "m.Payload", m.Payload)
 
 	if len(m.Payload) <= 0 {
 		return false
@@ -71,9 +71,9 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 	toAddr := m.Payload[0].(string)
 	value := m.Payload[1].(string)
 
-	tokenAddr := w.cfg.erc20Contract.String()
-	fromAddr := w.cfg.from
-	w.log.Info("Depositout Tron", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", toAddr, "value", value)
+	tokenAddr := write.cfg.erc20Contract.String()
+	fromAddr := write.cfg.from
+	write.log.Info("Depositout Tron", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", toAddr, "value", value)
 
 	param := []tronabi.Param{
 		{"address": tokenAddr},
@@ -83,16 +83,16 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 		{"uint256": big.NewInt(int64(m.Destination)).String()},
 	}
 
-	w.log.Info("hex.EncodeToString", "value", value)
+	write.log.Info("hex.EncodeToString", "value", value)
 	dataBuf, err := json.Marshal(param)
 	if err != nil {
 		return false
 	}
-	err = w.conn.TransferIn(w.cfg.from, w.bridgeContract, string(dataBuf), int64(4000000000), 0, "", 0)
+	err = write.conn.TransferIn(write.cfg.from, write.bridgeContract, string(dataBuf), int64(4000000000), 0, "", 0)
 	if err != nil {
 		return false
 	}
 
-	w.log.Info("Tron Bridge", "ExecuteTransaction", "successfully")
+	write.log.Info("Tron Bridge", "ExecuteTransaction", "successfully")
 	return true
 }

@@ -18,7 +18,6 @@ import (
 )
 
 var (
-	// Frequency of polling for a new block
 	BlockRetryInterval = time.Second * 5
 	BlockRetryLimit    = 5
 )
@@ -28,9 +27,9 @@ type listener struct {
 	conn       Connection
 	blockstore blockstore.Blockstorer
 	router     chains.Router
-	log        logger.Logger
 	stop       <-chan int
 	sysErr     chan<- error
+	log        logger.Logger
 }
 
 func NewListener(conn Connection, cfg *Config, log logger.Logger, bs blockstore.Blockstorer, stop <-chan int, sysErr chan<- error) *listener {
@@ -44,23 +43,21 @@ func NewListener(conn Connection, cfg *Config, log logger.Logger, bs blockstore.
 	}
 }
 
-func (l *listener) setRouter(r chains.Router) {
-	l.router = r
+func (listen *listener) setRouter(router chains.Router) {
+	listen.router = router
 }
 
 // start creates the initial subscription for all events
-func (l *listener) start() error {
+func (listen *listener) start() error {
 	go func() {
-		err := l.pollBlocks()
+		err := listen.pollBlocks()
 		if err != nil {
-			l.log.Error("Polling blocks failed", "err", err)
+			listen.log.Error("Polling blocks failed", "err", err)
 		}
 	}()
 
 	return nil
 }
-
-var ErrBlockNotReady = errors.New("required result to be 32 bytes, but got 0")
 
 // pollBlocks will poll for the latest block and proceed to parse the associated events as it sees new blocks.
 // Polling begins at the block defined in `l.startBlock`. Failed attempts to fetch the latest block or parse
@@ -115,24 +112,21 @@ func (listen *listener) pollBlocks() error {
 }
 
 // getDepositEventsForBlock looks for the deposit event in the latest block
-func (l *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
-	l.log.Debug("Querying block for deposit events", "block", latestBlock)
-	// query := buildQuery(l.cfg.bridgeContract, utils.Deposit, latestBlock, latestBlock)
-
-	// querying for logs
+func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
+	listen.log.Debug("Querying block for deposit events", "block", latestBlock)
 	logRequst := types.GetLogsRequest{
 		FromBlock: latestBlock.String(),
 		ToBlock:   latestBlock.String(),
-		Address:   l.cfg.bridgeContract,
+		Address:   listen.cfg.bridgeContract,
 		EventHash: xfsbridge.TransoutEvent,
 	}
-	logs, err := l.conn.GetLogs(logRequst)
+	logs, err := listen.conn.GetLogs(logRequst)
 	if err != nil {
 		return fmt.Errorf("unable to Filter Logs: %w", err)
 	}
 
 	for _, log := range *logs {
-		l.log.Info("getDepositEventsForBlock", "result", log)
+		listen.log.Info("getDepositEventsForBlock", "result", log)
 
 		if log.EventHash.Hex() == xfsbridge.TransoutEvent {
 			event, err := events.JSON(xfsbridge.BRIDGETOKENABI)
@@ -173,10 +167,10 @@ func (l *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 				return err
 			}
 
-			l.log.Info("message", "source:", m.Source, "destination:", m.Destination, "toAddr:", toAddr, "value", value)
-			err = l.router.Send(m)
+			listen.log.Info("message", "source:", m.Source, "destination:", m.Destination, "toAddr:", toAddr, "value", value)
+			err = listen.router.Send(m)
 			if err != nil {
-				l.log.Error("subscription error: failed to route message", "err", err)
+				listen.log.Error("subscription error: failed to route message", "err", err)
 			}
 
 		}

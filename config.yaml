@@ -9,16 +9,16 @@ chains:
       erc20: '0xA96039f8038899F023f73c55E81C57B8Ab06e7DB'
       http: true
       startblock: "11061963"
-  # - name: 'trx'
-  #   type: 'tron'
-  #   id: '2'
-  #   endpoint: 'grpc.nile.trongrid.io:50051'
-  #   from: 'TFEpgDmX8fmdyBqv7RNdhdZrpwZGHk8J84'
-  #   opts: 
-  #     bridge: 'TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR'
-  #     erc20: 'TMw3vT2zwWa5vomcqXgcQb3XCfac5kemKe'
-  #     startblock: "25047040"
-  #     erc20event: 'https://nile.trongrid.io/v1/contracts/TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR/events'
+  - name: 'trx'
+    type: 'tron'
+    id: '2'
+    endpoint: 'grpc.nile.trongrid.io:50051'
+    from: 'TFEpgDmX8fmdyBqv7RNdhdZrpwZGHk8J84'
+    opts: 
+      bridge: 'TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR'
+      erc20: 'TMw3vT2zwWa5vomcqXgcQb3XCfac5kemKe'
+      startblock: "26146689"
+      erc20event: 'https://nile.trongrid.io/v1/contracts/TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR/events'
   - name: 'xfs'
     type: 'xfsgo'
     id: '3'

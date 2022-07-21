@@ -39,8 +39,8 @@ func NewWriter(conn Connection, cfg *Config, log logger.Logger, stop <-chan int,
 }
 
 // setContract adds the bound receiver bridgeContract to the writer
-func (w *writer) setContract(bridge *bridgev1.Bridgev1) {
-	w.bridge = bridge
+func (write *writer) setContract(bridge *bridgev1.Bridgev1) {
+	write.bridge = bridge
 }
 
 func (write *writer) start() error {
@@ -50,21 +50,21 @@ func (write *writer) start() error {
 
 // ResolveMessage handles any given message based on type
 // A bool is returned to indicate failure/success, this should be ignored except for within tests.
-func (w *writer) ResolveMessage(m msg.Message) bool {
-	w.log.Info("Attempting to resolve message", "type", m.Type, "src", m.Source, "dst", m.Destination)
+func (write *writer) ResolveMessage(m msg.Message) bool {
+	write.log.Info("Attempting to resolve message", "type", m.Type, "src", m.Source, "dst", m.Destination)
 
 	switch m.Type {
 	case msg.TokenTransfer:
-		return w.ResolveErc20(m)
+		return write.ResolveERCToken(m)
 	default:
-		w.log.Error("Unknown message type received", "type", m.Type)
+		write.log.Error("Unknown message type received", "type", m.Type)
 		return false
 	}
 }
 
-func (w *writer) ResolveErc20(m msg.Message) bool {
+func (write *writer) ResolveERCToken(m msg.Message) bool {
 
-	w.log.Info("ResolveErc20", "m.Payload", m.Payload)
+	write.log.Info("ResolveErc20", "m.Payload", m.Payload)
 
 	if len(m.Payload) <= 0 {
 		return false
@@ -73,18 +73,18 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 	toAddr := m.Payload[0].(string)
 	value := m.Payload[1].(string)
 
-	tokenAddr := w.cfg.erc20Contract.String()
-	fromAddr := w.cfg.from
-	w.log.Info("Depositout Eth", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", toAddr, "value", value)
+	tokenAddr := write.cfg.erc20Contract.String()
+	fromAddr := write.cfg.from
+	write.log.Info("Depositout Eth", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", toAddr, "value", value)
 
 	amout, _ := big.NewInt(0).SetString(value, 10)
 
-	nonce, err := w.conn.Client().NonceAt(context.Background(), common.HexToAddress(fromAddr), nil)
+	nonce, err := write.conn.Client().NonceAt(context.Background(), common.HexToAddress(fromAddr), nil)
 	if err != nil {
 
 		return false
 	}
-	gasPrice, err := w.conn.Client().SuggestGasPrice(context.Background())
+	gasPrice, err := write.conn.Client().SuggestGasPrice(context.Background())
 	if err != nil {
 		return false
 	}
@@ -95,7 +95,7 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 		Nonce:    new(big.Int).SetUint64(nonce),
 		GasPrice: gasPrice,
 		Signer: func(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
-			keyPair := w.conn.Keypair()
+			keyPair := write.conn.Keypair()
 			if keyPair == nil {
 				return nil, fmt.Errorf("%s can't find", fromAddr)
 			}
@@ -107,7 +107,7 @@ func (w *writer) ResolveErc20(m msg.Message) bool {
 		},
 	}
 
-	err = w.BridgeTransferIn(auth, w.cfg.erc20Contract, common.HexToAddress(toAddr), amout, big.NewInt(0).SetUint64(uint64(m.Source)), big.NewInt(0).SetUint64(uint64(m.Destination)))
+	err = write.BridgeTransferIn(auth, write.cfg.erc20Contract, common.HexToAddress(toAddr), amout, big.NewInt(0).SetUint64(uint64(m.Source)), big.NewInt(0).SetUint64(uint64(m.Destination)))
 
 	return err == nil
 }

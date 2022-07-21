@@ -1,108 +1,101 @@
 package xfsgo
 
 import (
-	"errors"
-	"math/big"
-
 	"bridgeswap/bindings/xfs/xfsbridge"
 	"bridgeswap/chains/xfsgo/types"
-	"bridgeswap/controller/core"
-	"bridgeswap/sdk/xfs/common"
-
 	"bridgeswap/controller/msg"
 	"bridgeswap/logger"
+	"bridgeswap/sdk/xfs/common"
+	"fmt"
+	"math/big"
 )
 
-var _ core.Writer = &writer{}
-
-var TerminatedError = errors.New("terminated")
-
 type writer struct {
-	cfg        Config
-	conn       Connection
-	log        logger.Logger
-	sysErr     chan<- error
-	extendCall bool // Extend extrinsic calls to substrate with ResourceID.Used for backward compatibility with example pallet.
+	cfg    Config
+	conn   Connection
+	sysErr chan<- error
+	log    logger.Logger
 }
 
-func NewWriter(conn Connection, cfg *Config, log logger.Logger, sysErr chan<- error, extendCall bool) *writer {
+func NewWriter(cfg *Config, conn Connection, sysErr chan<- error, log logger.Logger) *writer {
 	return &writer{
-		cfg:        *cfg,
-		conn:       conn,
-		log:        log,
-		sysErr:     sysErr,
-		extendCall: extendCall,
+		cfg:    *cfg,
+		conn:   conn,
+		sysErr: sysErr,
+		log:    log,
 	}
 }
 
-func (w *writer) start() error {
-	w.log.Debug("Starting tron writer...")
+func (write *writer) start() error {
+	write.log.Info("Starting xfsgo writer...")
 	return nil
 }
 
-func (w *writer) ResolveMessage(m msg.Message) bool {
-	w.log.Info("Attempting to resolve message", "type", m.Type, "src", m.Source, "dst", m.Destination)
+func (write *writer) ResolveMessage(message msg.Message) bool {
+	write.log.Info("Attempting to resolve message", "type", message.Type, "src", message.Source, "dst", message.Destination)
 
-	switch m.Type {
+	switch message.Type {
 	case msg.TokenTransfer:
-		return w.ResolveErc20(m)
+		return write.ResolveERCToken(message)
 	default:
-		w.log.Error("Unknown message type received", "type", m.Type)
+		write.log.Error("Unknown message type received", "type", message.Type)
 		return false
 	}
 }
 
-func (w *writer) ResolveErc20(m msg.Message) bool {
+func (write *writer) ResolveERCToken(message msg.Message) bool {
+	write.log.Info("XFSGO", "ResolveERCToken msg.Payload", message.Payload)
 
-	w.log.Info("ResolveErc20", "m.Payload", m.Payload)
-
-	if len(m.Payload) <= 0 {
+	if len(message.Payload) <= 0 {
+		write.log.Error("XFSGO", "ResolveERCToken message payload", "is nil")
 		return false
 	}
 
-	fromId := big.NewInt(0).SetUint64(uint64(m.Source))
-	toAddr := m.Payload[0].(string)
-	value := m.Payload[1].(string)
+	write.log.Debug("XFSGO", "ResolveERCToken message payload", message.Payload)
 
-	tokenAddr := w.cfg.erc20Contract
-	fromAddr := w.cfg.from
-	destAddr := string(toAddr)
-	w.log.Info("Depositout XFS", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", destAddr, "value", value)
-
-	w.log.Info("ResolveErc20", "m.Payload", m.Payload)
-
-	amount, ok := new(big.Int).SetString(value, 10)
+	fromChainId := big.NewInt(0).SetUint64(uint64(message.Source))
+	strDestAddr := message.Payload[0].(string)
+	strValue := message.Payload[1].(string)
+	tokenAddr := write.cfg.erc20Contract
+	fromAddr := write.cfg.from
+	write.log.Info("TransferIn asset to XFSGO chain", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "strDestAddr", strDestAddr, "value", strValue)
+	amount, ok := new(big.Int).SetString(strValue, 10)
 	if !ok {
+		write.log.Error("XFSGO", "ResolveERCToken TransferIn", "Abnormal asset value")
 		return false
 	}
 
-	abi, err := xfsbridge.JSON(xfsbridge.BRIDGETOKENABI)
+	tokenABI, err := xfsbridge.JSON(xfsbridge.BRIDGETOKENABI)
 	if err != nil {
+		write.log.Error("XFSGO", "ResolveERCToken TransferIn", fmt.Errorf("%v parse json err", xfsbridge.BRIDGETOKENABI))
 		return false
 	}
-	cAddr := common.StrB58ToAddress(toAddr)
-	data, err := abi.TransferIn(xfsbridge.NewAddress(cAddr), xfsbridge.NewUint256(amount), xfsbridge.NewUint256(fromId))
+
+	cAddr := common.StrB58ToAddress(strDestAddr)
+	TransferInAbiData, err := tokenABI.TransferIn(xfsbridge.NewAddress(cAddr), xfsbridge.NewUint256(amount), xfsbridge.NewUint256(fromChainId))
 	if err != nil {
+		write.log.Error("XFSGO", "ResolveERCToken TransferIn", err)
 		return false
 	}
 
 	rawTx := types.StringRawTransaction{
-		From: w.cfg.from,
-		To:   w.cfg.bridgeContract,
-		Data: data,
+		From: write.cfg.from,
+		To:   write.cfg.bridgeContract,
+		Data: TransferInAbiData,
 	}
-	strRawTx, err := w.conn.SignedTx(rawTx)
+	strRawTx, err := write.conn.SignedTx(rawTx)
 	if err != nil {
+		write.log.Error("XFSGO", "ResolveERCToken TransferIn SignedTx", err)
 		return false
 	}
 
-	txHash, err := w.conn.SendRawTransaction(strRawTx)
-
+	txHash, err := write.conn.SendRawTransaction(strRawTx)
 	if err != nil {
+		write.log.Error("XFSGO", "ResolveERCToken TransferIn SendRawTransaction", err)
 		return false
 	}
 
-	w.log.Info("XFS", "SendRawTransaction successfully", txHash)
+	write.log.Info("XFSGO ", "ResolveERCToken successfully", txHash)
 
 	return true
 }

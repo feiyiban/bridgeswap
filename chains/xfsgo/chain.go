@@ -62,11 +62,9 @@ func InitializeChain(cfg *core.ChainConfig, log logger.Logger, sysErr chan<- err
 		return nil, err
 	}
 
-	ue := parseUseExtended(cfg)
-
 	// Setup listener & writer
 	l := NewListener(conn, xfsCfg, log, bs, stop, sysErr)
-	w := NewWriter(conn, xfsCfg, log, sysErr, ue)
+	w := NewWriter(xfsCfg, conn, sysErr, log)
 	return &Chain{
 		cfg:      cfg,
 		conn:     conn,
