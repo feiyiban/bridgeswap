@@ -1,17 +1,17 @@
 package ethereum
 
 import (
+	"github.com/ethereum/go-ethereum/ethclient"
+
 	"bridgeswap/bindings/eth/bridgev1"
 	"bridgeswap/blockstore"
 	"bridgeswap/chains/ethereum/connection"
-	"bridgeswap/chains/ethereum/crypto/secp256k1"
-	"bridgeswap/chains/ethereum/keystore"
 	"bridgeswap/controller/core"
 	"bridgeswap/logger"
+	"bridgeswap/sdk/ethereum/crypto/secp256k1"
+	"bridgeswap/sdk/ethereum/keystore"
 	"fmt"
 	"math/big"
-
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type Connection interface {
@@ -19,14 +19,6 @@ type Connection interface {
 	Keypair() *secp256k1.Keypair
 	Client() *ethclient.Client
 	LatestBlock() (*big.Int, error)
-	// Opts() *bind.TransactOpts
-	// CallOpts() *bind.CallOpts
-	// LockAndUpdateOpts() error
-	// UnlockOpts()
-
-	// EnsureHasBytecode(address common.Address) error
-	// LatestBlock() (*big.Int, error)
-	// WaitForBlock(block *big.Int, delay *big.Int) error
 	Close()
 }
 
@@ -42,7 +34,7 @@ type Chain struct {
 
 // checkBlockstore queries the blockstore for the latest known block. If the latest block is
 // greater than cfg.startBlock, then cfg.startBlock is replaced with the latest known block.
-func setupBlockstore(cfg *Config, addr string) (*blockstore.Blockstore, error) {
+func newBlockstore(cfg *Config, addr string) (*blockstore.Blockstore, error) {
 	bs, err := blockstore.NewBlockstore(cfg.blockstorePath, cfg.id, addr)
 	if err != nil {
 		return nil, err
@@ -78,7 +70,7 @@ func InitializeChain(chainCfg *core.ChainConfig, log logger.Logger, sysErr chan<
 		return nil, fmt.Errorf("keystore %s", "Get Keypair err")
 	}
 
-	bs, err := setupBlockstore(cfg, cfg.from)
+	bs, err := newBlockstore(cfg, cfg.from)
 	if err != nil {
 		log.Debug("setupBlockstore:", err.Error())
 		return nil, err

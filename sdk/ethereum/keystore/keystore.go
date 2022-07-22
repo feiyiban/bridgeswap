@@ -25,8 +25,8 @@ import (
 	"fmt"
 	"os"
 
-	"bridgeswap/chains/ethereum/crypto"
 	"bridgeswap/config"
+	"bridgeswap/sdk/ethereum/crypto"
 )
 
 const EnvPassword = "KEYSTORE_PASSWORD"

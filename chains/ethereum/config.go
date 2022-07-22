@@ -11,6 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
+const DefaultKeystorePath = "./keys"
+
 const (
 	DefaultGasLimit           = 6721975
 	DefaultGasPrice           = 20000000000
@@ -19,13 +21,9 @@ const (
 	DefaultGasMultiplier      = 1
 )
 
-// Chain specific options
-
-const DefaultKeystorePath = "./keys"
-
 var (
 	BridgeOpt             = "bridge"
-	Erc20HandlerOpt       = "erc20"
+	Erc20HandlerOpt       = "erc20Token"
 	MaxGasPriceOpt        = "maxGasPrice"
 	MinGasPriceOpt        = "minGasPrice"
 	GasLimitOpt           = "gasLimit"

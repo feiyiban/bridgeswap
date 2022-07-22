@@ -1,8 +1,6 @@
 package ethereum
 
 import (
-	"bridgeswap/blockstore"
-	"bridgeswap/logger"
 	"bytes"
 	"context"
 	"errors"
@@ -10,12 +8,14 @@ import (
 	"math/big"
 	"time"
 
-	"bridgeswap/bindings/eth/bridgev1"
-	"bridgeswap/chains"
-	"bridgeswap/controller/msg"
-
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+
+	"bridgeswap/bindings/eth/bridgev1"
+	"bridgeswap/blockstore"
+	"bridgeswap/chains"
+	"bridgeswap/controller/msg"
+	"bridgeswap/logger"
 )
 
 var (

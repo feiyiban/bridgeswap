@@ -3,8 +3,8 @@ package keystore
 import (
 	"fmt"
 
-	"bridgeswap/chains/ethereum/crypto"
-	"bridgeswap/chains/ethereum/crypto/secp256k1"
+	"bridgeswap/sdk/ethereum/crypto"
+	"bridgeswap/sdk/ethereum/crypto/secp256k1"
 )
 
 // The Constant "keys". These are the name that the keys are based on. This can be expanded, but

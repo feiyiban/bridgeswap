@@ -1,11 +1,12 @@
 package connection
 
 import (
-	"bridgeswap/chains/ethereum/crypto/secp256k1"
-	"bridgeswap/logger"
 	"context"
 	"math/big"
 	"sync"
+
+	"bridgeswap/logger"
+	"bridgeswap/sdk/ethereum/crypto/secp256k1"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"

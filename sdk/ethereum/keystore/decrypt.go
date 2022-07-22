@@ -7,8 +7,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"bridgeswap/chains/ethereum/crypto"
-	"bridgeswap/chains/ethereum/crypto/secp256k1"
+	"bridgeswap/sdk/ethereum/crypto"
+	"bridgeswap/sdk/ethereum/crypto/secp256k1"
 )
 
 // Decrypt uses AES to decrypt ciphertext with the symmetric key deterministically created from `password`

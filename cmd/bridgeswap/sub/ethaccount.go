@@ -5,11 +5,11 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package sub
 
 import (
-	"bridgeswap/chains/ethereum/crypto"
-	"bridgeswap/chains/ethereum/crypto/secp256k1"
-	"bridgeswap/chains/ethereum/keystore"
 	"bridgeswap/config"
 	"bridgeswap/logger"
+	"bridgeswap/sdk/ethereum/crypto"
+	"bridgeswap/sdk/ethereum/crypto/secp256k1"
+	"bridgeswap/sdk/ethereum/keystore"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

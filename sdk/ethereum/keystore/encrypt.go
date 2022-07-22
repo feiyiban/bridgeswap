@@ -11,8 +11,8 @@ import (
 	"os"
 	"syscall"
 
-	"bridgeswap/chains/ethereum/crypto"
-	"bridgeswap/chains/ethereum/crypto/secp256k1"
+	"bridgeswap/sdk/ethereum/crypto"
+	"bridgeswap/sdk/ethereum/crypto/secp256k1"
 
 	"golang.org/x/crypto/blake2b"
 	terminal "golang.org/x/term"

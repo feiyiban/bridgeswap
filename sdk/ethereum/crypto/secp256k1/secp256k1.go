@@ -3,7 +3,7 @@ package secp256k1
 import (
 	"crypto/ecdsa"
 
-	"bridgeswap/chains/ethereum/crypto"
+	"bridgeswap/sdk/ethereum/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
