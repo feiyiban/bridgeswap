@@ -22,19 +22,19 @@ type writer struct {
 	cfg    Config
 	conn   Connection
 	bridge *bridgev1.Bridgev1 // instance of bound receiver bridgeContract
-	log    logger.Logger
+	sysErr chan<- error       // Reports fatal error to core
 	stop   <-chan int
-	sysErr chan<- error // Reports fatal error to core
+	log    logger.Logger
 }
 
 // NewWriter creates and returns writer
-func NewWriter(conn Connection, cfg *Config, log logger.Logger, stop <-chan int, sysErr chan<- error) *writer {
+func NewWriter(cfg *Config, conn Connection, sysErr chan<- error, stop <-chan int, log logger.Logger) *writer {
 	return &writer{
 		cfg:    *cfg,
 		conn:   conn,
-		log:    log,
-		stop:   stop,
 		sysErr: sysErr,
+		stop:   stop,
+		log:    log,
 	}
 }
 
@@ -73,7 +73,7 @@ func (write *writer) ResolveERCToken(m msg.Message) bool {
 	toAddr := m.Payload[0].(string)
 	value := m.Payload[1].(string)
 
-	tokenAddr := write.cfg.erc20Contract.String()
+	tokenAddr := write.cfg.erc20Contract
 	fromAddr := write.cfg.from
 	write.log.Info("Depositout Eth", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", toAddr, "value", value)
 
@@ -107,7 +107,7 @@ func (write *writer) ResolveERCToken(m msg.Message) bool {
 		},
 	}
 
-	err = write.BridgeTransferIn(auth, write.cfg.erc20Contract, common.HexToAddress(toAddr), amout, big.NewInt(0).SetUint64(uint64(m.Source)), big.NewInt(0).SetUint64(uint64(m.Destination)))
+	err = write.BridgeTransferIn(auth, common.HexToAddress(write.cfg.erc20Contract), common.HexToAddress(toAddr), amout, big.NewInt(0).SetUint64(uint64(m.Source)), big.NewInt(0).SetUint64(uint64(m.Destination)))
 
 	return err == nil
 }

@@ -42,7 +42,7 @@ func checkBlockstore(bs *blockstore.Blockstore, startBlock uint64) (uint64, erro
 	}
 }
 
-func InitializeChain(cfg *core.ChainConfig, log logger.Logger, sysErr chan<- error) (*Chain, error) {
+func InitializeChain(cfg *core.ChainConfig, sysErr chan<- error, log logger.Logger) (*Chain, error) {
 	xfsCfg, err := parseChainConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -107,6 +107,6 @@ func (chain *Chain) Name() string {
 func (chain *Chain) Stop() {
 	close(chain.stop)
 	if chain.conn != nil {
-		// c.conn.Close()
+		// chain.conn.Close()
 	}
 }

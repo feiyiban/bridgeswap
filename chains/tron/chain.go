@@ -41,7 +41,7 @@ func setupBlockstore(cfg *Config, addr string) (*blockstore.Blockstore, error) {
 		return nil, err
 	}
 
-	if !cfg.freshStart {
+	if !cfg.bFreshStart {
 		latestBlock, err := bs.TryLoadLatestBlock()
 		if err != nil {
 			return nil, err
@@ -67,7 +67,7 @@ func getPassphrase() (string, error) {
 	return string(pass), nil
 }
 
-func InitializeChain(chainCfg *core.ChainConfig, log logger.Logger, sysErr chan<- error) (*Chain, error) {
+func InitializeChain(chainCfg *core.ChainConfig, sysErr chan<- error, log logger.Logger) (*Chain, error) {
 	cfg, err := parseChainConfig(chainCfg)
 	if err != nil {
 		return nil, err
@@ -89,14 +89,14 @@ func InitializeChain(chainCfg *core.ChainConfig, log logger.Logger, sysErr chan<
 	}
 
 	stop := make(chan int)
-	conn := connection.NewConnection(cfg.endpoint, cfg.http, log, ks, acct, cfg.gasLimit, cfg.maxGasPrice, cfg.minGasPrice, cfg.gasMultiplier, cfg.egsApiKey, cfg.egsSpeed)
+	conn := connection.NewConnection(cfg.endpoint, cfg.http, log, ks, acct, cfg.gasLimit, cfg.maxGasPrice, cfg.minGasPrice)
 	err = conn.Connect()
 	if err != nil {
 		log.Debug("Connect:", err.Error())
 		return nil, err
 	}
 
-	chainId, err := conn.SelfChainId(cfg.bridgeContract.String())
+	chainId, err := conn.SelfChainId(cfg.bridgeContract)
 	if err != nil {
 		log.Debug("bridge contract selfchainid:", err.Error())
 		return nil, err
@@ -106,7 +106,7 @@ func InitializeChain(chainCfg *core.ChainConfig, log logger.Logger, sysErr chan<
 		return nil, fmt.Errorf("chainId (%d) and configuration chainId (%d) do not match", chainId, chainCfg.ID)
 	}
 
-	if chainCfg.LatestBlock {
+	if chainCfg.BLatestBlock {
 		curr, err := conn.LatestBlock()
 		if err != nil {
 			return nil, err
@@ -118,7 +118,7 @@ func InitializeChain(chainCfg *core.ChainConfig, log logger.Logger, sysErr chan<
 	// listener.setContracts(bridgeContract)
 
 	writer := NewWriter(conn, cfg, log, stop, sysErr)
-	writer.setContract(cfg.bridgeContract.String())
+	writer.setContract(cfg.bridgeContract)
 
 	return &Chain{
 		cfg:      chainCfg,
@@ -159,11 +159,6 @@ func (c *Chain) Name() string {
 	return c.cfg.Name
 }
 
-// func (c *Chain) LatestBlock() metrics.LatestBlock {
-// 	return c.listener.latestBlock
-// }
-
-// Stop signals to any running routines to exit
 func (c *Chain) Stop() {
 	close(c.stop)
 	if c.conn != nil {

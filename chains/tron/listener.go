@@ -142,9 +142,9 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 	listen.log.Debug("Querying block for deposit events", "block", latestBlock)
 
 	params := url.Values{}
-	parseURL, err := url.Parse(listen.cfg.erc20event)
+	parseURL, err := url.Parse(listen.cfg.erc20Event)
 	if err != nil {
-		listen.log.Debug("Parse", listen.cfg.erc20event, err)
+		listen.log.Debug("Parse", listen.cfg.erc20Event, err)
 		return err
 	}
 
@@ -154,7 +154,7 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 	resp, err := http.Get(urlPathWithParams)
 	defer resp.Body.Close()
 	if err != nil {
-		listen.log.Debug("Parse", listen.cfg.erc20event, err)
+		listen.log.Debug("Parse", listen.cfg.erc20Event, err)
 		return err
 	}
 

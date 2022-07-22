@@ -27,11 +27,6 @@ type Chain struct {
 	Opts     map[string]string `mapstructure:"opts" json:"opts" yaml:"opts"`             // 合约
 }
 
-// type Opts struct {
-// 	Bridge string `mapstructure:"bridge" json:"bridge" yaml:"bridge"` // 桥接合约
-// 	ERC20  string `mapstructure:"erc20" json:"erc20" yaml:"erc20"`    // 桥接合约
-// }
-
 func ParseDaemonConfig(configFilePath string) (ConfigChains, error) {
 	if configFilePath == "" {
 		configFilePath = DefaultConfigFile

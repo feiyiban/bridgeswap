@@ -28,24 +28,21 @@ type listener struct {
 	cfg        Config
 	conn       Connection
 	router     chains.Router
-	bridge     *bridgev1.Bridgev1 // instance of bound bridge contract
-	blockstore blockstore.Blockstorer
-	log        logger.Logger
+	bridge     *bridgev1.Bridgev1     // instance of bound bridge contract
+	blockstore blockstore.Blockstorer // Update the block store when listening
+	sysErr     chan<- error           // Reports fatal error to core
 	stop       <-chan int
-	sysErr     chan<- error // Reports fatal error to core
-
-	blockConfirmations *big.Int
+	log        logger.Logger
 }
 
-func NewListener(conn Connection, cfg *Config, log logger.Logger, bs blockstore.Blockstorer, stop <-chan int, sysErr chan<- error) *listener {
+func NewListener(cfg *Config, conn Connection, blockStore blockstore.Blockstorer, sysErr chan<- error, stop <-chan int, log logger.Logger) *listener {
 	return &listener{
-		cfg:                *cfg,
-		conn:               conn,
-		log:                log,
-		blockstore:         bs,
-		stop:               stop,
-		sysErr:             sysErr,
-		blockConfirmations: cfg.blockConfirmations,
+		cfg:        *cfg,
+		conn:       conn,
+		blockstore: blockStore,
+		sysErr:     sysErr,
+		stop:       stop,
+		log:        log,
 	}
 }
 
@@ -102,7 +99,7 @@ func (listen *listener) pollBlocks() error {
 			}
 
 			// Sleep if the difference is less than BlockDelay; (latest - current) < BlockDelay
-			if big.NewInt(0).Sub(latestBlock, currentBlock).Cmp(listen.blockConfirmations) == -1 {
+			if big.NewInt(0).Sub(latestBlock, currentBlock).Cmp(listen.cfg.blockConfirmations) == -1 {
 				listen.log.Debug("Block not ready, will retry", "target", currentBlock, "latest", latestBlock)
 				time.Sleep(BlockRetryInterval)
 				continue
@@ -146,7 +143,7 @@ func buildQuery(contract common.Address, sig EventSig, startBlock *big.Int, endB
 func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 	listen.log.Debug("Querying block for deposit events", "block", latestBlock)
 
-	query := buildQuery(listen.cfg.bridgeContract, MapTransferOut, latestBlock, latestBlock)
+	query := buildQuery(common.HexToAddress(listen.cfg.bridgeContract), MapTransferOut, latestBlock, latestBlock)
 
 	// querying for logs
 	logs, err := listen.conn.Client().FilterLogs(context.Background(), query)

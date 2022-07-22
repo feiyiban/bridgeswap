@@ -71,7 +71,7 @@ func (write *writer) ResolveERCToken(m msg.Message) bool {
 	toAddr := m.Payload[0].(string)
 	value := m.Payload[1].(string)
 
-	tokenAddr := write.cfg.erc20Contract.String()
+	tokenAddr := write.cfg.erc20Contract
 	fromAddr := write.cfg.from
 	write.log.Info("Depositout Tron", "tokenAddr", tokenAddr, "fromAddr", fromAddr, "destAddr", toAddr, "value", value)
 

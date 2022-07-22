@@ -1,6 +1,7 @@
 package ethereum
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"bridgeswap/bindings/eth/bridgev1"
@@ -10,7 +11,6 @@ import (
 	"bridgeswap/logger"
 	"bridgeswap/sdk/ethereum/crypto/secp256k1"
 	"bridgeswap/sdk/ethereum/keystore"
-	"fmt"
 	"math/big"
 )
 
@@ -18,30 +18,40 @@ type Connection interface {
 	Connect() error
 	Keypair() *secp256k1.Keypair
 	Client() *ethclient.Client
+	EnsureHasBytecode(addr common.Address) error
 	LatestBlock() (*big.Int, error)
 	Close()
 }
 
 type Chain struct {
-	cfg  *core.ChainConfig // The config of the chain
-	conn Connection        // THe chains connection
-
-	listener *listener // The listener of this chain
-	writer   *writer   // The writer of the chain
-
-	stop chan<- int
+	cfg      *core.ChainConfig // The config of the chain
+	conn     Connection        // THe chains connection
+	listener *listener         // The listener of this chain
+	writer   *writer           // The writer of the chain
+	stop     chan<- int
 }
 
-// checkBlockstore queries the blockstore for the latest known block. If the latest block is
-// greater than cfg.startBlock, then cfg.startBlock is replaced with the latest known block.
-func newBlockstore(cfg *Config, addr string) (*blockstore.Blockstore, error) {
-	bs, err := blockstore.NewBlockstore(cfg.blockstorePath, cfg.id, addr)
+func InitializeChain(chainCfg *core.ChainConfig, sysErr chan<- error, log logger.Logger) (*Chain, error) {
+	cfg, err := parseChainConfig(chainCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	if !cfg.freshStart {
-		latestBlock, err := bs.TryLoadLatestBlock()
+	cryptoKeyPair, err := keystore.KeypairFromAddress(cfg.from, keystore.EthChain, cfg.keystorePath)
+	if err != nil {
+		return nil, err
+	}
+	secp256k1KeyPair, ok := cryptoKeyPair.(*secp256k1.Keypair)
+	if !ok {
+		return nil, err
+	}
+
+	blockStore, err := blockstore.NewBlockstore(cfg.blockstorePath, cfg.id, cfg.from)
+	if err != nil {
+		return nil, err
+	}
+	if !cfg.bFreshStart {
+		latestBlock, err := blockStore.TryLoadLatestBlock()
 		if err != nil {
 			return nil, err
 		}
@@ -51,50 +61,43 @@ func newBlockstore(cfg *Config, addr string) (*blockstore.Blockstore, error) {
 		}
 	}
 
-	return bs, nil
-}
-
-func InitializeChain(chainCfg *core.ChainConfig, log logger.Logger, sysErr chan<- error) (*Chain, error) {
-	cfg, err := parseChainConfig(chainCfg)
-	if err != nil {
-		return nil, err
-	}
-
-	kpI, err := keystore.KeypairFromAddress(cfg.from, keystore.EthChain, cfg.keystorePath)
-	if err != nil {
-		return nil, err
-	}
-
-	kp, ok := kpI.(*secp256k1.Keypair)
-	if !ok {
-		return nil, fmt.Errorf("keystore %s", "Get Keypair err")
-	}
-
-	bs, err := newBlockstore(cfg, cfg.from)
-	if err != nil {
-		log.Debug("setupBlockstore:", err.Error())
-		return nil, err
-	}
-
-	conn := connection.NewConnection(cfg.endpoint, cfg.http, kp, log, cfg.gasLimit, cfg.maxGasPrice, cfg.minGasPrice, cfg.gasMultiplier)
+	conn := connection.NewConnection(cfg.http, cfg.endpoint, secp256k1KeyPair, cfg.gasLimit, cfg.maxGasPrice, cfg.minGasPrice, log)
 	err = conn.Connect()
 	if err != nil {
-		log.Debug("Connect:", err.Error())
 		return nil, err
 	}
 
-	bridge, err := bridgev1.NewBridgev1(cfg.bridgeContract, conn.Client())
+	err = conn.EnsureHasBytecode(common.HexToAddress(cfg.bridgeContract))
 	if err != nil {
-		log.Debug("Get Bridge Obj Err by bridgeContract", err.Error())
 		return nil, err
+	}
+
+	if cfg.erc20Contract != "" {
+		err = conn.EnsureHasBytecode(common.HexToAddress(cfg.erc20Contract))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	bridge, err := bridgev1.NewBridgev1(common.HexToAddress(cfg.bridgeContract), conn.Client())
+	if err != nil {
+		log.Debug("error happened when call NewBridgev1", "error", err)
+		return nil, err
+	}
+
+	if cfg.bLatestBlock {
+		curr, err := conn.LatestBlock()
+		if err != nil {
+			return nil, err
+		}
+		cfg.startBlock = curr
 	}
 
 	stop := make(chan int)
-
-	listener := NewListener(conn, cfg, log, bs, stop, sysErr)
+	listener := NewListener(cfg, conn, blockStore, sysErr, stop, log)
 	listener.setContracts(bridge)
 
-	writer := NewWriter(conn, cfg, log, stop, sysErr)
+	writer := NewWriter(cfg, conn, sysErr, stop, log)
 	writer.setContract(bridge)
 
 	return &Chain{

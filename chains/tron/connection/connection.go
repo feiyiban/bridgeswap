@@ -23,39 +23,31 @@ import (
 var BlockRetryInterval = time.Second * 5
 
 type Connection struct {
-	withTLS       bool
-	endpoint      string
-	conn          *trongrpc.GrpcClient
-	key           *keystore.KeyStore
-	senderAcct    *keystore.Account
-	gasLimit      *big.Int
-	maxGasPrice   *big.Int
-	minGasPrice   *big.Int
-	gasMultiplier *big.Float
-	egsApiKey     string
-	egsSpeed      string
-
-	optsLock sync.Mutex
-	log      logger.Logger
-	stop     chan int // All routines should exit when this channel is closed
+	withTLS     bool
+	endpoint    string
+	conn        *trongrpc.GrpcClient
+	key         *keystore.KeyStore
+	senderAcct  *keystore.Account
+	gasLimit    *big.Int
+	maxGasPrice *big.Int
+	minGasPrice *big.Int
+	optsLock    sync.Mutex
+	stop        chan int // All routines should exit when this channel is closed
+	log         logger.Logger
 }
 
 // NewConnection returns an uninitialized connection, must call Connection.Connect() before using.
-func NewConnection(endpoint string, withTLS bool, log logger.Logger, key *keystore.KeyStore, senderAcct *keystore.Account, gasLimit, maxGasPrice, minGasPrice *big.Int, gasMultiplier *big.Float, gsnApiKey, gsnSpeed string) *Connection {
+func NewConnection(endpoint string, withTLS bool, log logger.Logger, key *keystore.KeyStore, senderAcct *keystore.Account, gasLimit, maxGasPrice, minGasPrice *big.Int) *Connection {
 	return &Connection{
-		endpoint:      endpoint,
-		withTLS:       withTLS,
-		log:           log,
-		key:           key,
-		senderAcct:    senderAcct,
-		gasLimit:      gasLimit,
-		maxGasPrice:   maxGasPrice,
-		minGasPrice:   minGasPrice,
-		gasMultiplier: gasMultiplier,
-		egsApiKey:     gsnApiKey,
-		egsSpeed:      gsnSpeed,
-
-		stop: make(chan int),
+		endpoint:    endpoint,
+		withTLS:     withTLS,
+		log:         log,
+		key:         key,
+		senderAcct:  senderAcct,
+		gasLimit:    gasLimit,
+		maxGasPrice: maxGasPrice,
+		minGasPrice: minGasPrice,
+		stop:        make(chan int),
 	}
 }
 
@@ -159,19 +151,6 @@ func (c *Connection) LatestBlock() (*big.Int, error) {
 	return big.NewInt(height), nil
 }
 
-func multiplyGasPrice(gasEstimate *big.Int, gasMultiplier *big.Float) *big.Int {
-
-	gasEstimateFloat := new(big.Float).SetInt(gasEstimate)
-
-	result := gasEstimateFloat.Mul(gasEstimateFloat, gasMultiplier)
-
-	gasPrice := new(big.Int)
-
-	result.Int(gasPrice)
-
-	return gasPrice
-}
-
 // LockAndUpdateOpts acquires a lock on the opts before updating the nonce
 // and gas price.
 
@@ -182,6 +161,7 @@ func (c *Connection) UnlockOpts() {
 // Close terminates the client connection and stops any running routines
 func (c *Connection) Close() {
 	if c.conn != nil {
+		return
 	}
 	c.conn.Stop()
 	close(c.stop)

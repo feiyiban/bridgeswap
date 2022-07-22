@@ -1,64 +1,57 @@
 package tron
 
 import (
-	"errors"
 	"fmt"
 	"math/big"
 
 	"bridgeswap/controller/core"
 
-	"bridgeswap/chains/tron/utils"
-	tronaddr "bridgeswap/sdk/tron/address"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-const DefaultGasLimit = 6721975
-const DefaultGasPrice = 20000000000
-const DefaultMinGasPrice = 0
-const DefaultBlockConfirmations = 3
-const DefaultGasMultiplier = 1
+const (
+	DefaultGasLimit           = 6721975
+	DefaultGasPrice           = 20000000000
+	DefaultMinGasPrice        = 0
+	DefaultBlockConfirmations = 3
+	DefaultGasMultiplier      = 1
+)
 
-// Chain specific options
 var (
 	BridgeOpt             = "bridge"
-	Erc20HandlerOpt       = "erc20"
-	ListenEvent           = "erc20event"
+	ERC20HandlerOpt       = "erc20Token"
+	ListenEvent           = "erc20Event"
+	StartBlockOpt         = "startBlock"
+	BlockConfirmationsOpt = "blockConfirmations"
 	MaxGasPriceOpt        = "maxGasPrice"
 	MinGasPriceOpt        = "minGasPrice"
 	GasLimitOpt           = "gasLimit"
-	GasMultiplier         = "gasMultiplier"
 	HttpOpt               = "http"
-	StartBlockOpt         = "startblock"
-	BlockConfirmationsOpt = "blockConfirmations"
-	EGSApiKey             = "egsApiKey"
-	EGSSpeed              = "egsSpeed"
 )
 
-// Config encapsulates all necessary parameters in ethereum compatible forms
 type Config struct {
-	name               string // Human-readable chain name
-	id                 uint8  // ChainID
-	endpoint           string // url for rpc endpoint
-	from               string // address of key to use
-	keystorePath       string // Location of keyfiles
-	blockstorePath     string
-	freshStart         bool // Disables loading from blockstore at start
-	bridgeContract     tronaddr.Address
-	erc20Contract      tronaddr.Address
-	erc20event         string
-	gasLimit           *big.Int
-	maxGasPrice        *big.Int
-	minGasPrice        *big.Int
-	gasMultiplier      *big.Float
-	http               bool // Config for type of connection
-	startBlock         *big.Int
-	blockConfirmations *big.Int
-	egsApiKey          string // API key for ethgasstation to query gas prices
-	egsSpeed           string // The speed which a transaction should be processed: average, fast, fastest. Default: fast
+	name               string   // Human-readable chain name
+	id                 uint8    // Human-readable chain id
+	endpoint           string   // url for rpc endpoint
+	from               string   // address of key to use
+	keystorePath       string   // Location of keyfiles
+	blockstorePath     string   // Synchronous block record path
+	bFreshStart        bool     // Disables loading from blockstore at start
+	bLatestBlock       bool     // If true, overrides blockstore or latest block in config and starts from current block
+	http               bool     // Config for type of connection
+	bridgeContract     string   // bridge contract address
+	erc20Contract      string   // erc20 token contract address
+	erc20Event         string   // erc20 event
+	gasLimit           *big.Int // gas limit
+	maxGasPrice        *big.Int // max gas price
+	minGasPrice        *big.Int // min gas price
+	startBlock         *big.Int // Start synchronizing block height
+	blockConfirmations *big.Int // Synchronize the block to the specified offset post-processing block
 }
 
-// parseChainConfig uses a core.ChainConfig to construct a corresponding Config
+// parseChainConfig uses a contraoller.core.ChainConfig to construct a corresponding Config
+// The generated configuration file is also used for listener and writer
 func parseChainConfig(chainCfg *core.ChainConfig) (*Config, error) {
-
 	config := &Config{
 		name:               chainCfg.Name,
 		id:                 chainCfg.ID,
@@ -66,86 +59,63 @@ func parseChainConfig(chainCfg *core.ChainConfig) (*Config, error) {
 		from:               chainCfg.From,
 		keystorePath:       chainCfg.KeystorePath,
 		blockstorePath:     chainCfg.BlockstorePath,
-		freshStart:         chainCfg.FreshStart,
-		bridgeContract:     tronaddr.Address{},
+		bFreshStart:        chainCfg.BFreshStart,
+		bLatestBlock:       chainCfg.BLatestBlock,
+		http:               false,
+		bridgeContract:     "",
+		erc20Contract:      "",
 		gasLimit:           big.NewInt(DefaultGasLimit),
 		maxGasPrice:        big.NewInt(DefaultGasPrice),
 		minGasPrice:        big.NewInt(DefaultMinGasPrice),
-		gasMultiplier:      big.NewFloat(DefaultGasMultiplier),
-		http:               false,
 		startBlock:         big.NewInt(0),
 		blockConfirmations: big.NewInt(0),
-		egsApiKey:          "",
-		egsSpeed:           "",
 	}
 
-	var err error
-	if contract, ok := chainCfg.Opts[BridgeOpt]; ok && contract != "" {
-		// addr, _ := addressexchange.TronAddress2EthAddress(contract)
-		config.bridgeContract, err = tronaddr.Base58ToAddress(contract)
-		if err != nil {
-			return nil, err
-		}
+	if bridgeContract, ok := chainCfg.Opts[BridgeOpt]; ok && bridgeContract != "" {
+		config.bridgeContract = bridgeContract
 		delete(chainCfg.Opts, BridgeOpt)
 	} else {
 		return nil, fmt.Errorf("must provide opts.bridge field for ethereum config")
 	}
 
-	if contract, ok := chainCfg.Opts[Erc20HandlerOpt]; ok {
-		config.erc20Contract, err = tronaddr.Base58ToAddress(contract)
-		if err != nil {
-			return nil, err
-		}
-		delete(chainCfg.Opts, Erc20HandlerOpt)
+	if erc20TokenContract, ok := chainCfg.Opts[ERC20HandlerOpt]; ok {
+		config.erc20Contract = erc20TokenContract
+		delete(chainCfg.Opts, ERC20HandlerOpt)
 	}
 
-	if tokenevent, ok := chainCfg.Opts[ListenEvent]; ok {
-		config.erc20event = tokenevent
+	if erc20Event, ok := chainCfg.Opts[ListenEvent]; ok {
+		config.erc20Event = erc20Event
 		delete(chainCfg.Opts, ListenEvent)
 	}
 
-	if gasPrice, ok := chainCfg.Opts[MaxGasPriceOpt]; ok {
-		price, parseErr := utils.ParseUint256OrHex(&gasPrice)
+	if maxGasPrice, ok := chainCfg.Opts[MaxGasPriceOpt]; ok {
+		bigMaxGasPrice, parseErr := hexutil.DecodeBig(maxGasPrice)
 		if parseErr != nil {
-			return nil, fmt.Errorf("unable to parse max gas price, %w", parseErr)
+			return nil, fmt.Errorf("unable to parse max gas price, %v", parseErr)
 		}
-
-		config.maxGasPrice = price
+		config.maxGasPrice = bigMaxGasPrice
 		delete(chainCfg.Opts, MaxGasPriceOpt)
 	}
 
 	if minGasPrice, ok := chainCfg.Opts[MinGasPriceOpt]; ok {
-		price, parseErr := utils.ParseUint256OrHex(&minGasPrice)
+		bigMinGasPrice, parseErr := hexutil.DecodeBig(minGasPrice)
 		if parseErr != nil {
-			return nil, fmt.Errorf("unable to parse min gas price, %w", parseErr)
+			return nil, fmt.Errorf("unable to parse min gas price, %v", parseErr)
 		}
-
-		config.minGasPrice = price
+		config.minGasPrice = bigMinGasPrice
 		delete(chainCfg.Opts, MinGasPriceOpt)
 	}
 
 	if gasLimit, ok := chainCfg.Opts[GasLimitOpt]; ok {
-		limit, parseErr := utils.ParseUint256OrHex(&gasLimit)
+		bigGaslimit, parseErr := hexutil.DecodeBig(gasLimit)
 		if parseErr != nil {
-			return nil, fmt.Errorf("unable to parse gas limit, %w", parseErr)
+			return nil, fmt.Errorf("unable to parse gas limit, %v", parseErr)
 		}
-
-		config.gasLimit = limit
+		config.gasLimit = bigGaslimit
 		delete(chainCfg.Opts, GasLimitOpt)
 	}
 
-	if gasMultiplier, ok := chainCfg.Opts[GasMultiplier]; ok {
-		multilier := big.NewFloat(1)
-		_, pass := multilier.SetString(gasMultiplier)
-		if pass {
-			config.gasMultiplier = multilier
-			delete(chainCfg.Opts, GasMultiplier)
-		} else {
-			return nil, errors.New("unable to parse gasMultiplier to float")
-		}
-	}
-
-	if HTTP, ok := chainCfg.Opts[HttpOpt]; ok && HTTP == "true" {
+	if bHttp, ok := chainCfg.Opts[HttpOpt]; ok && bHttp == "true" {
 		config.http = true
 		delete(chainCfg.Opts, HttpOpt)
 	} else if HTTP, ok := chainCfg.Opts[HttpOpt]; ok && HTTP == "false" {
@@ -154,9 +124,9 @@ func parseChainConfig(chainCfg *core.ChainConfig) (*Config, error) {
 	}
 
 	if startBlock, ok := chainCfg.Opts[StartBlockOpt]; ok && startBlock != "" {
-		block := big.NewInt(0)
-		startBlock, pass := block.SetString(startBlock, 10)
-		if pass {
+		bigStartBlock := big.NewInt(int64(0))
+		startBlock, bPass := bigStartBlock.SetString(startBlock, 10)
+		if bPass {
 			config.startBlock = startBlock
 			delete(chainCfg.Opts, StartBlockOpt)
 		} else {
@@ -165,10 +135,10 @@ func parseChainConfig(chainCfg *core.ChainConfig) (*Config, error) {
 	}
 
 	if blockConfirmations, ok := chainCfg.Opts[BlockConfirmationsOpt]; ok && blockConfirmations != "" {
-		val := big.NewInt(DefaultBlockConfirmations)
-		_, pass := val.SetString(blockConfirmations, 10)
-		if pass {
-			config.blockConfirmations = val
+		bigBlockConfirm := big.NewInt(int64(DefaultBlockConfirmations))
+		_, bPass := bigBlockConfirm.SetString(blockConfirmations, 10)
+		if bPass {
+			config.blockConfirmations = bigBlockConfirm
 			delete(chainCfg.Opts, BlockConfirmationsOpt)
 		} else {
 			return nil, fmt.Errorf("unable to parse %s", BlockConfirmationsOpt)
@@ -176,11 +146,6 @@ func parseChainConfig(chainCfg *core.ChainConfig) (*Config, error) {
 	} else {
 		config.blockConfirmations = big.NewInt(DefaultBlockConfirmations)
 		delete(chainCfg.Opts, BlockConfirmationsOpt)
-	}
-
-	if gsnApiKey, ok := chainCfg.Opts[EGSApiKey]; ok && gsnApiKey != "" {
-		config.egsApiKey = gsnApiKey
-		delete(chainCfg.Opts, EGSApiKey)
 	}
 
 	return config, nil

@@ -52,11 +52,11 @@ func runDaemon() error {
 		log := logger.Root().New("chain", chainConfig.Name)
 
 		if chain.Type == "ethereum" {
-			newChain, err = ethereum.InitializeChain(chainConfig, log, sysErr)
+			newChain, err = ethereum.InitializeChain(chainConfig, sysErr, log)
 		} else if chain.Type == "tron" {
-			newChain, err = tron.InitializeChain(chainConfig, log, sysErr)
+			newChain, err = tron.InitializeChain(chainConfig, sysErr, log)
 		} else if chain.Type == "xfsgo" {
-			newChain, err = xfsgo.InitializeChain(chainConfig, log, sysErr)
+			newChain, err = xfsgo.InitializeChain(chainConfig, sysErr, log)
 		} else {
 			logger.Error("chain", fmt.Errorf("%v", "Unsupported chain type"))
 		}

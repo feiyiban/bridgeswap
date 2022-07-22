@@ -2,6 +2,7 @@ package connection
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -9,41 +10,38 @@ import (
 	"bridgeswap/sdk/ethereum/crypto/secp256k1"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
 type Connection struct {
-	endpoint      string
-	http          bool
-	kp            *secp256k1.Keypair
-	gasLimit      *big.Int
-	maxGasPrice   *big.Int
-	minGasPrice   *big.Int
-	gasMultiplier *big.Float
-
-	client *ethclient.Client
-	// signer    ethtypes.Signer
-	opts     *bind.TransactOpts
-	callOpts *bind.CallOpts
-	nonce    uint64
-	optsLock sync.Mutex
-	log      logger.Logger
-	stop     chan int // All routines should exit when this channel is closed
+	http        bool
+	endpoint    string
+	keypair     *secp256k1.Keypair
+	gasLimit    *big.Int
+	maxGasPrice *big.Int
+	minGasPrice *big.Int
+	client      *ethclient.Client
+	opts        *bind.TransactOpts
+	callOpts    *bind.CallOpts
+	nonce       uint64
+	optsLock    sync.Mutex
+	stop        chan int // All routines should exit when this channel is closed
+	log         logger.Logger
 }
 
 // NewConnection returns an uninitialized connection, must call Connection.Connect() before using.
-func NewConnection(endpoint string, http bool, kp *secp256k1.Keypair, log logger.Logger, gasLimit, maxGasPrice, minGasPrice *big.Int, gasMultiplier *big.Float) *Connection {
+func NewConnection(http bool, endpoint string, keypair *secp256k1.Keypair, gasLimit, maxGasPrice, minGasPrice *big.Int, log logger.Logger) *Connection {
 	return &Connection{
-		endpoint:      endpoint,
-		http:          http,
-		kp:            kp,
-		gasLimit:      gasLimit,
-		maxGasPrice:   maxGasPrice,
-		minGasPrice:   minGasPrice,
-		gasMultiplier: gasMultiplier,
-		log:           log,
-		stop:          make(chan int),
+		http:        http,
+		endpoint:    endpoint,
+		keypair:     keypair,
+		gasLimit:    gasLimit,
+		maxGasPrice: maxGasPrice,
+		minGasPrice: minGasPrice,
+		stop:        make(chan int),
+		log:         log,
 	}
 }
 
@@ -73,7 +71,7 @@ func (conn *Connection) Client() *ethclient.Client {
 }
 
 func (conn *Connection) Keypair() *secp256k1.Keypair {
-	return conn.kp
+	return conn.keypair
 }
 
 // LatestBlock returns the latest block from the current chain
@@ -83,6 +81,19 @@ func (conn *Connection) LatestBlock() (*big.Int, error) {
 		return nil, err
 	}
 	return header.Number, nil
+}
+
+// EnsureHasBytecode asserts if contract code exists at the specified address
+func (conn *Connection) EnsureHasBytecode(addr common.Address) error {
+	code, err := conn.client.CodeAt(context.Background(), addr, nil)
+	if err != nil {
+		return err
+	}
+
+	if len(code) == 0 {
+		return fmt.Errorf("no bytecode found at %s", addr.Hex())
+	}
+	return nil
 }
 
 // Close terminates the client connection and stops any running routines

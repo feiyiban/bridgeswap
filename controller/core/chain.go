@@ -15,7 +15,7 @@ type ChainConfig struct {
 	From           string            // External account address and Manage its private key
 	KeystorePath   string            // Location of key files
 	BlockstorePath string            // Location of blockstore
-	FreshStart     bool              // If true, blockstore is ignored at start.
-	LatestBlock    bool              // If true, overrides blockstore or latest block in config and starts from current block
+	BFreshStart    bool              // If true, blockstore is ignored at start.
+	BLatestBlock   bool              // If true, overrides blockstore or latest block in config and starts from current block
 	Opts           map[string]string // Per chain options
 }
