@@ -5,7 +5,7 @@ import (
 	"bridgeswap/chains/xfsgo/types"
 	"bridgeswap/controller/msg"
 	"bridgeswap/logger"
-	"bridgeswap/sdk/xfs/common"
+	"bridgeswap/sdk/xfsgo/common"
 	"fmt"
 	"math/big"
 )

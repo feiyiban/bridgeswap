@@ -12,11 +12,11 @@ import (
 	"os"
 	"strings"
 
-	"bridgeswap/chains/tron/pkg/account"
-	c "bridgeswap/chains/tron/pkg/common"
-	"bridgeswap/chains/tron/pkg/ledger"
-	"bridgeswap/chains/tron/pkg/mnemonic"
-	"bridgeswap/chains/tron/pkg/store"
+	"bridgeswap/sdk/tron/account"
+	c "bridgeswap/sdk/tron/common"
+	"bridgeswap/sdk/tron/ledger"
+	"bridgeswap/sdk/tron/mnemonic"
+	"bridgeswap/sdk/tron/store"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"

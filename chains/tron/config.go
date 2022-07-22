@@ -7,8 +7,8 @@ import (
 
 	"bridgeswap/controller/core"
 
-	tronaddr "bridgeswap/chains/tron/pkg/address"
 	"bridgeswap/chains/tron/utils"
+	tronaddr "bridgeswap/sdk/tron/address"
 )
 
 const DefaultGasLimit = 6721975

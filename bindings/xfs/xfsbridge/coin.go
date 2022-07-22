@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"math/big"
 
-	"bridgeswap/sdk/xfs/common"
+	"bridgeswap/sdk/xfsgo/common"
 )
 
 type CTypeUint8 [1]byte

@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"bridgeswap/chains/xfsgo/types"
-	"bridgeswap/sdk/xfs/common"
-	"bridgeswap/sdk/xfs/rpcclient"
+	"bridgeswap/sdk/xfsgo/common"
+	"bridgeswap/sdk/xfsgo/rpcclient"
 
 	"bridgeswap/logger"
 )

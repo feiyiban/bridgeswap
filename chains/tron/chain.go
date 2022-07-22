@@ -11,8 +11,8 @@ import (
 
 	"bridgeswap/logger"
 
-	tronGrpc "bridgeswap/chains/tron/pkg/client"
-	tronstore "bridgeswap/chains/tron/pkg/store"
+	tronGrpc "bridgeswap/sdk/tron/client"
+	tronstore "bridgeswap/sdk/tron/store"
 
 	terminal "golang.org/x/term"
 )

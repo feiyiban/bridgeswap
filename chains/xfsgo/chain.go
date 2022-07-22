@@ -6,7 +6,7 @@ import (
 	"bridgeswap/chains/xfsgo/types"
 	"bridgeswap/controller/core"
 	"bridgeswap/logger"
-	"bridgeswap/sdk/xfs/rpcclient"
+	"bridgeswap/sdk/xfsgo/rpcclient"
 	"math/big"
 )
 

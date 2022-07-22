@@ -1,6 +1,6 @@
 package types
 
-import "bridgeswap/sdk/xfs/common"
+import "bridgeswap/sdk/xfsgo/common"
 
 type RawTransactionArgs struct {
 	Data string `json:"data"`

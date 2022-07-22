@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"bridgeswap/sdk/xfs/common"
+	"bridgeswap/sdk/xfsgo/common"
 )
 
 type Method struct {

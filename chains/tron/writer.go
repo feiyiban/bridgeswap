@@ -8,7 +8,7 @@ import (
 
 	"bridgeswap/logger"
 
-	tronabi "bridgeswap/chains/tron/pkg/abi"
+	tronabi "bridgeswap/sdk/tron/abi"
 )
 
 var _ core.Writer = &writer{}

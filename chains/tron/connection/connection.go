@@ -12,12 +12,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	trongrpc "bridgeswap/chains/tron/pkg/client"
-	troncommon "bridgeswap/chains/tron/pkg/common"
-	"bridgeswap/chains/tron/pkg/keystore"
+	trongrpc "bridgeswap/sdk/tron/client"
+	troncommon "bridgeswap/sdk/tron/common"
+	"bridgeswap/sdk/tron/keystore"
 
-	trontransaction "bridgeswap/chains/tron/pkg/client/transaction"
-	tronstore "bridgeswap/chains/tron/pkg/store"
+	trontransaction "bridgeswap/sdk/tron/client/transaction"
+	tronstore "bridgeswap/sdk/tron/store"
 )
 
 var BlockRetryInterval = time.Second * 5

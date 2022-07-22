@@ -1,9 +1,9 @@
 package types
 
 import (
-	"bridgeswap/sdk/xfs/common"
-	"bridgeswap/sdk/xfs/common/ahash"
-	"bridgeswap/sdk/xfs/crypto"
+	"bridgeswap/sdk/xfsgo/common"
+	"bridgeswap/sdk/xfsgo/common/ahash"
+	"bridgeswap/sdk/xfsgo/crypto"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"

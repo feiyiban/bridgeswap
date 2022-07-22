@@ -1,7 +1,7 @@
 package sub
 
 import (
-	"bridgeswap/chains/tron/pkg/address"
+	"bridgeswap/sdk/tron/address"
 
 	"github.com/pkg/errors"
 )
