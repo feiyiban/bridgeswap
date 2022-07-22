@@ -1,17 +1,6 @@
 package ethereum
 
-import (
-	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/ethereum/go-ethereum/crypto"
-)
-
-type EventSig string
-
-func (es EventSig) GetTopic() common.Hash {
-	return crypto.Keccak256Hash([]byte(es))
-}
-
 const (
-	MapTransferOut EventSig = "MAPTransferOut(uint,uint,string,uint)"
+	MapTransferIn  string = "0x480c1cd6cfcaa4162f54fd97792200e72dbb4bd1a21259f882414f0d9188941d"
+	MapTransferOut string = "0xc2cf97cb20e3fec72bbd1515ad10ad56582e8085858049990a34a1abe8fbee3b"
 )

@@ -126,24 +126,18 @@ func (listen *listener) pollBlocks() error {
 	}
 }
 
-// buildQuery constructs a query for the bridgeContract by hashing sig to get the event topic
-func buildQuery(contract common.Address, sig EventSig, startBlock *big.Int, endBlock *big.Int) ethereum.FilterQuery {
-	query := ethereum.FilterQuery{
-		FromBlock: startBlock,
-		ToBlock:   endBlock,
-		Addresses: []common.Address{contract},
-		// Topics: [][]common.Hash{
-		// 	{sig.GetTopic()},
-		// },
-	}
-	return query
-}
-
 // getDepositEventsForBlock looks for the deposit event in the latest block
 func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 	listen.log.Debug("Querying block for deposit events", "block", latestBlock)
 
-	query := buildQuery(common.HexToAddress(listen.cfg.bridgeContract), MapTransferOut, latestBlock, latestBlock)
+	query := ethereum.FilterQuery{
+		FromBlock: latestBlock,
+		ToBlock:   latestBlock,
+		Addresses: []common.Address{common.HexToAddress(listen.cfg.bridgeContract)},
+		Topics: [][]common.Hash{
+			{common.HexToHash(MapTransferOut)},
+		},
+	}
 
 	// querying for logs
 	logs, err := listen.conn.Client().FilterLogs(context.Background(), query)
@@ -153,13 +147,6 @@ func (listen *listener) getDepositEventsForBlock(latestBlock *big.Int) error {
 
 	// read through the log events and handle their deposit event if handler is recognized
 	for _, log := range logs {
-		text := fmt.Sprintf("log out:%v", log)
-		listen.log.Debug("Log for event ------>", "log", text)
-		// l.log.Debug("Log for event ------>", "data", log.Data)
-
-		if len(log.Topics) != 3 {
-			return nil
-		}
 		selfChainID := uint8(log.Topics[1].Big().Uint64())
 		destChainID := uint8(log.Topics[2].Big().Uint64())
 
