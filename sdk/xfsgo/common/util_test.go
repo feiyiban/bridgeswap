@@ -1,7 +1,7 @@
 package common
 
 import (
-	"bridgeswap/sdk/xfs/common/ahash"
+	"bridgeswap/sdk/xfsgo/common/ahash"
 	"testing"
 )
 

@@ -3,15 +3,14 @@ package crypto
 import (
 	"bridgeswap/sdk/xfsgo/common"
 	"bridgeswap/sdk/xfsgo/common/ahash"
-
-	secp256k1 "github.com/ethereum/go-ethereum/crypto"
-
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
 	"math/big"
+
+	secp256k1 "github.com/ethereum/go-ethereum/crypto"
 )
 
 const defaultKeyPackType = uint8(1)

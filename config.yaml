@@ -3,29 +3,29 @@ chains:
     type: 'ethereum'
     id: '1'
     endpoint: 'https://rinkeby.infura.io/v3/a64cc9552107441e8a9c6de95692045f'
-    from: '0x39FDeD8CE4Aca2B674eF863d8C4E93bD15718101'
+    from: '0x39fded8ce4aca2b674ef863d8c4e93bd15718101'
     opts: 
-      bridge: '0x99155bCcF403D838F2F643F66450c616F7d2c2A3'
-      erc20Token: '0xA96039f8038899F023f73c55E81C57B8Ab06e7DB'
+      bridge: '0xf6b37c57f50477fd48177fe359737b3a672847aa'
+      erc20Token: '0xe92eb51d1bbef881fa1bc7cc738baa32e611e1ab'
       http: true
-      startBlock: "11068434"
-  # - name: 'trx'
-  #   type: 'tron'
-  #   id: '2'
-  #   endpoint: 'grpc.nile.trongrid.io:50051'
-  #   from: 'TFEpgDmX8fmdyBqv7RNdhdZrpwZGHk8J84'
-  #   opts: 
-  #     bridge: 'TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR'
-  #     erc20Token: 'TMw3vT2zwWa5vomcqXgcQb3XCfac5kemKe'
-  #     startBlock: "26146689"
-  #     erc20Event: 'https://nile.trongrid.io/v1/contracts/TAthDkYifbo1GrbVLXq8MsSqcjqDTgtXbR/events'
-  # - name: 'xfs'
-  #   type: 'xfsgo'
-  #   id: '3'
-  #   endpoint: 'http://127.0.0.1:9012'
-  #   from: 'heX5LmNrdedHhTHgCUtBb2MjXUM9fMdPL'
-  #   opts: 
-  #     bridge: 'V1S9vhGENSkoMrSzjuGts8AB6DNXjYQsq'
-  #     erc20Token: 'mvYLn5MD8r7VeJGdHbDbxsQhJ4qSEuz67'
-  #     erc20CreatedAddr : 'TNWhUCYS9gcUcpnRqKq7cRWfyDpA78Hmt'
-  #     startBlock: "343"
+      startBlock: "11073572"
+  - name: 'trx'
+    type: 'tron'
+    id: '2'
+    endpoint: 'grpc.nile.trongrid.io:50051'
+    from: 'TFEpgDmX8fmdyBqv7RNdhdZrpwZGHk8J84'
+    opts: 
+      bridge: 'TSLvA8RYeH5847PqgHU1TT8EEJJudHcuk4'
+      erc20Token: 'TJugLZLMyswrqC5r14eRi3ZJo6tFwLf1VQ'
+      startBlock: "28317015"
+      erc20Event: 'https://nile.trongrid.io/v1/contracts/TSLvA8RYeH5847PqgHU1TT8EEJJudHcuk4/events'
+  - name: 'xfs'
+    type: 'xfsgo'
+    id: '3'
+    endpoint: 'http://127.0.0.1:9012'
+    from: 'heX5LmNrdedHhTHgCUtBb2MjXUM9fMdPL'
+    opts: 
+      bridge: 'V1S9vhGENSkoMrSzjuGts8AB6DNXjYQsq'
+      erc20Token: 'mvYLn5MD8r7VeJGdHbDbxsQhJ4qSEuz67'
+      erc20CreatedAddr : 'TNWhUCYS9gcUcpnRqKq7cRWfyDpA78Hmt'
+      startBlock: "343"

@@ -1,7 +1,7 @@
 package priqueue
 
 import (
-	"bridgeswap/sdk/xfs/assert"
+	"bridgeswap/sdk/xfsgo/assert"
 	"testing"
 )
 

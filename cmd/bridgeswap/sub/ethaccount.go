@@ -33,19 +33,19 @@ var (
 	handleGenerateCommond = &cobra.Command{
 		Use:                   "generate",
 		DisableFlagsInUseLine: true,
-		Short:                 "generate bridge keystore",
+		Short:                 "generate eth account",
 		RunE:                  generatekey,
 	}
 	handleImportCommond = &cobra.Command{
 		Use:                   "import",
 		DisableFlagsInUseLine: true,
-		Short:                 "import bridge keystore",
+		Short:                 "import eth account key",
 		RunE:                  importkey,
 	}
 	handleListCommond = &cobra.Command{
 		Use:                   "list",
 		DisableFlagsInUseLine: true,
-		Short:                 "list bridge keystore",
+		Short:                 "list eth account key",
 		RunE:                  list,
 	}
 )
@@ -296,16 +296,7 @@ func keystoreDir(keyPath string) (keystorepath string, err error) {
 			return "", err
 		}
 	} else {
-		// uDir, _ := homedir.Dir()
-		// // datadir not specified, use default
-		// keyPath := filepath.Join(uDir, common.DefaultConfigDirName, common.DefaultConfigAccountAliasesDirName, common.DefaultConfigEthereumAccountDirName)
-		// keystorepath, err = filepath.Abs(keyPath)
-		// if err != nil {
-		// 	return "", fmt.Errorf("could not create keystore file path: %w", err)
-		// }
-		// datadir not specified, use default
 		keyPath = config.DefaultEthKeystorePath
-
 		keystorepath, err = filepath.Abs(keyPath)
 		if err != nil {
 			return "", fmt.Errorf("could not create keystore file path: %w", err)

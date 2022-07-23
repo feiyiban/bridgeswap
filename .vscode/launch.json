@@ -5,11 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Attach to Process",
+            "name": "Launch file",
             "type": "go",
-            "request": "attach",
-            "mode": "local",
-            "processId": 0
+            "request": "launch",
+            "mode": "debug",
+            "program": "${file}",
+            "args": ["xfsaccount", "import-private-key", "0x0101b48abb58def6934d2087a9b7e746be9b5b2d14b4d3470efcba2ff7319b4846aa"]
         }
+       
     ]
 }

@@ -17,8 +17,8 @@
 package assert
 
 import (
-	"bridgeswap/sdk/xfs/common"
-	"bridgeswap/sdk/xfs/crypto"
+	"bridgeswap/sdk/xfsgo/common"
+	"bridgeswap/sdk/xfsgo/crypto"
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/x509"

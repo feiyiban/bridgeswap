@@ -3,7 +3,6 @@ package crypto
 import (
 	"crypto/ecdsa"
 	"encoding/hex"
-	"fmt"
 
 	secp256k1 "github.com/ethereum/go-ethereum/crypto"
 )
@@ -17,11 +16,6 @@ func ECDSASign2Hex(hash []byte, prv *ecdsa.PrivateKey) (string, error) {
 }
 
 func ECDSASign(digestHash []byte, prv *ecdsa.PrivateKey) ([]byte, error) {
-	if len(digestHash) != DigestLength {
-		return nil, fmt.Errorf("hash is required to be exactly %d bytes (%d)", DigestLength, len(digestHash))
-	}
-	// seckey := common.PaddedBigBytes(prv.D, prv.Params().BitSize/8)
-	// defer zeroBytes(seckey)
 	return secp256k1.Sign(digestHash, prv)
 }
 
@@ -33,18 +27,6 @@ func ECDSASignNoRecover(digestHash []byte, prv *ecdsa.PrivateKey) ([]byte, error
 	return signed[:len(signed)-1], nil
 }
 
-// func Ecrecover(hash, sig []byte) ([]byte, error) {
-// 	return secp256k1.RecoverPubkey(hash, sig)
-// }
-
-// func SigToPub(hash, sig []byte) (*ecdsa.PublicKey, error) {
-// 	s, err := Ecrecover(hash, sig)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	x, y := elliptic.Unmarshal(secp256k1.S256(), s)
-// 	return &ecdsa.PublicKey{Curve: secp256k1.S256(), X: x, Y: y}, nil
-// }
 func CompressPubkey(pubkey *ecdsa.PublicKey) []byte {
 	return secp256k1.CompressPubkey(pubkey)
 }

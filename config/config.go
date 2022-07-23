@@ -10,6 +10,7 @@ import (
 const (
 	DefaultConfigFile       = "./config.yaml"
 	DefaultEthKeystorePath  = "./keys/eth"
+	DefaultXFSKeystorePath  = "./keys/xfs"
 	DefaultTronKeystorePath = "./keys/tron"
 )
 

@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"bridgeswap/chains/ethereum/crypto/secp256k1"
+	"bridgeswap/sdk/ethereum/crypto/secp256k1"
 )
 
 func TestEncryptAndDecrypt(t *testing.T) {
