@@ -1,22 +1,27 @@
 package ethereum
 
 import (
+	"crypto/ecdsa"
+	"fmt"
+	"os"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"bridgeswap/bindings/eth/bridgev1"
 	"bridgeswap/blockstore"
 	"bridgeswap/chains/ethereum/connection"
 	"bridgeswap/controller/core"
 	"bridgeswap/logger"
-	"bridgeswap/sdk/ethereum/crypto/secp256k1"
-	"bridgeswap/sdk/ethereum/keystore"
+	"bridgeswap/sdk/ethereum/store"
+
 	"math/big"
 )
 
 type Connection interface {
 	Connect() error
-	Keypair() *secp256k1.Keypair
+	GetPrivateKey() *ecdsa.PrivateKey
 	Client() *ethclient.Client
 	EnsureHasBytecode(addr common.Address) error
 	LatestBlock() (*big.Int, error)
@@ -31,20 +36,46 @@ type Chain struct {
 	stop     chan<- int
 }
 
+// getPassphrase fetches the correct passphrase depending on if a file is available to
+// read from or if the user wants to enter in their own passphrase. Otherwise, just use
+// the default passphrase. No confirmation of passphrase
+func getPassphrase() (string, error) {
+	fmt.Println("Enter password for tron key:")
+	pass, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return "", err
+	}
+	return string(pass), nil
+}
+
 func InitializeChain(chainCfg *core.ChainConfig, sysErr chan<- error, log logger.Logger) (*Chain, error) {
 	cfg, err := parseChainConfig(chainCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	cryptoKeyPair, err := keystore.KeypairFromAddress(cfg.from, keystore.EthChain, cfg.keystorePath)
+	passphrase, err := getPassphrase()
 	if err != nil {
 		return nil, err
 	}
-	secp256k1KeyPair, ok := cryptoKeyPair.(*secp256k1.Keypair)
-	if !ok {
+
+	ks, account, err := store.UnlockedKeystore(cfg.from, passphrase)
+	if err != nil {
 		return nil, err
 	}
+
+	_, key, err := ks.GetDecryptedKey(*account, passphrase)
+
+	prikey := key.PrivateKey
+
+	// cryptoKeyPair, err := keystore.KeypairFromAddress(cfg.from, keystore.EthChain, cfg.keystorePath)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// secp256k1KeyPair, ok := cryptoKeyPair.(*secp256k1.Keypair)
+	// if !ok {
+	// 	return nil, err
+	// }
 
 	blockStore, err := blockstore.NewBlockstore(cfg.blockstorePath, cfg.id, cfg.from)
 	if err != nil {
@@ -61,7 +92,7 @@ func InitializeChain(chainCfg *core.ChainConfig, sysErr chan<- error, log logger
 		}
 	}
 
-	conn := connection.NewConnection(cfg.http, cfg.endpoint, secp256k1KeyPair, cfg.gasLimit, cfg.maxGasPrice, cfg.minGasPrice, log)
+	conn := connection.NewConnection(cfg.http, cfg.endpoint, prikey, cfg.gasLimit, cfg.maxGasPrice, cfg.minGasPrice, log)
 	err = conn.Connect()
 	if err != nil {
 		return nil, err

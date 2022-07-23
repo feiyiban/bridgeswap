@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "${file}",
-            "args": ["xfsaccount", "import-private-key", "0x0101b48abb58def6934d2087a9b7e746be9b5b2d14b4d3470efcba2ff7319b4846aa"]
+            "args": ["ethaccount", "import", "0b6a50a8270cbc1de97b06aeb49a9d795b1b2b40448420fd5e562cd31aee3ba6"]
         }
        
     ]

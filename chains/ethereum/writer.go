@@ -95,11 +95,11 @@ func (write *writer) ResolveERCToken(m msg.Message) bool {
 		Nonce:    new(big.Int).SetUint64(nonce),
 		GasPrice: gasPrice,
 		Signer: func(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
-			keyPair := write.conn.Keypair()
+			keyPair := write.conn.GetPrivateKey()
 			if keyPair == nil {
 				return nil, fmt.Errorf("%s can't find", fromAddr)
 			}
-			signature, _ := crypto.Sign(signer.Hash(tx).Bytes(), keyPair.PrivateKey())
+			signature, _ := crypto.Sign(signer.Hash(tx).Bytes(), keyPair)
 			if err != nil {
 				return nil, err
 			}

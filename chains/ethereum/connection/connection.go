@@ -2,12 +2,12 @@ package connection
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"fmt"
 	"math/big"
 	"sync"
 
 	"bridgeswap/logger"
-	"bridgeswap/sdk/ethereum/crypto/secp256k1"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -18,7 +18,7 @@ import (
 type Connection struct {
 	http        bool
 	endpoint    string
-	keypair     *secp256k1.Keypair
+	privateKey  *ecdsa.PrivateKey
 	gasLimit    *big.Int
 	maxGasPrice *big.Int
 	minGasPrice *big.Int
@@ -32,11 +32,11 @@ type Connection struct {
 }
 
 // NewConnection returns an uninitialized connection, must call Connection.Connect() before using.
-func NewConnection(http bool, endpoint string, keypair *secp256k1.Keypair, gasLimit, maxGasPrice, minGasPrice *big.Int, log logger.Logger) *Connection {
+func NewConnection(http bool, endpoint string, privatekey *ecdsa.PrivateKey, gasLimit, maxGasPrice, minGasPrice *big.Int, log logger.Logger) *Connection {
 	return &Connection{
 		http:        http,
 		endpoint:    endpoint,
-		keypair:     keypair,
+		privateKey:  privatekey,
 		gasLimit:    gasLimit,
 		maxGasPrice: maxGasPrice,
 		minGasPrice: minGasPrice,
@@ -70,8 +70,8 @@ func (conn *Connection) Client() *ethclient.Client {
 	return conn.client
 }
 
-func (conn *Connection) Keypair() *secp256k1.Keypair {
-	return conn.keypair
+func (conn *Connection) GetPrivateKey() *ecdsa.PrivateKey {
+	return conn.privateKey
 }
 
 // LatestBlock returns the latest block from the current chain
